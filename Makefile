@@ -29,8 +29,6 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
-LDFLAGS ?= -ldl
-
 all: directories $(BUILD_DIR)/libffblogiocalls.so $(BUILD_DIR)/libffbfixupdate.so
 
 directories: $(BUILD_DIR)
@@ -39,10 +37,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(BUILD_DIR)/libffblogiocalls.so: $(SRC_DIR)/libffblogiocalls.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -ldl -shared $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
 
 $(BUILD_DIR)/libffbfixupdate.so: $(SRC_DIR)/libffbfixupdate.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -ldl -shared $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
