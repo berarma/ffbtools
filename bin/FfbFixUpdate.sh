@@ -23,10 +23,12 @@ CURRENT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 if [ -f "${CURRENT_DIR}/../build/libfixffupdate.so" ]
 then
-    LD_PRELOAD="${CURRENT_DIR}/../build/libfixffupdate.so"
+    OUR_LD_PRELOAD="${CURRENT_DIR}/../build/libfixffupdate.so"
 else
-    LD_PRELOAD="/usr/local/lib/libfixffupdate.so"
+    OUR_LD_PRELOAD="/usr/local/lib/libfixffupdate.so"
 fi
+
+LD_PRELOAD="${OUR_LD_PRELOAD} ${LD_PRELOAD}"
 
 DEVICE_FILE="$1"
 
