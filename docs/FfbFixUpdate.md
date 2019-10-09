@@ -9,3 +9,6 @@ Arguments:
    the `/dev/input/` tree.
  - `<command>`: Command that runs the application we want to try the fix.
 
+To use it on Steam games go to game properties, click "Set launch options", enter this command:
+  ```/home/user/ffbtools/bin/FfbFixUpdate.sh <device> [<logprefix>] -- %command%```
+
