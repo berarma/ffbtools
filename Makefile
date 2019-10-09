@@ -29,6 +29,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
+LDFLAGS ?= -ldl
+
 all: directories $(BUILD_DIR)/libffblogiocalls.so $(BUILD_DIR)/libffbfixupdate.so
 
 directories: $(BUILD_DIR)
