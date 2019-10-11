@@ -246,7 +246,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
-            strcpy(string, "<");
+            strcpy(string, "");
             if (testBit(FF_CONSTANT, argp)) strcat(string, " Constant");
             if (testBit(FF_PERIODIC, argp)) {
                 strcat(string, " Periodic (");
@@ -265,7 +265,7 @@ int ioctl(int fd, unsigned long request, char *argp)
             if (testBit(FF_INERTIA, argp)) strcat(string, " Inertia");
             if (testBit(FF_GAIN, argp)) strcat(string, " Gain");
             if (testBit(FF_AUTOCENTER, argp)) strcat(string, " Autocenter");
-            report("%d, %s", result, string);
+            report("< %d, %s", result, string);
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
             report("< %d, effects: %d", result, *((int*)argp));
