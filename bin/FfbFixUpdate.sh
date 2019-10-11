@@ -30,7 +30,7 @@ fi
 
 LD_PRELOAD="${OUR_LD_PRELOAD} ${LD_PRELOAD}"
 
-DEVICE_FILE="$1"
+DEVICE_FILE=$(readlink -f "$1")
 
 if [ -n "$DEVICE_FILE" ]
 then
