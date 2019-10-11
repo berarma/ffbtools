@@ -10,7 +10,7 @@ them.
 
 This project aims to address the problem by providing easy tools for creating
 reports and testing issues. And at the same time help new developers understand
-what's going on under the hood.
+how it all works.
 
 ## The tools
 
@@ -19,10 +19,9 @@ what's going on under the hood.
   [ValveSoftware/Proton/issues/2366](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-539114450)
   about the FFB effects being stopped when updating them.
 
-## Known issues
+## Notes
 
- - [The Logitech FFB driver supports only constant force](hid-lg4ff.md).
- - [Updating force effects can fail](ffbupdate.md).
+ - [The Logitech FFB driver](hid-lg4ff.md).
 
 ## Resources
 
@@ -30,17 +29,10 @@ what's going on under the hood.
  - [Force Feedback Protocol for Logitech Gaming Devices](https://opensource.logitech.com/opensource/index.php/Technical_Information).
  - [linuxconsole tools](https://github.com/flosse/linuxconsole): Useful commands to test FFB.
  - [SDL2 Force Feedback Support](https://wiki.libsdl.org/CategoryForceFeedback).
+ - [Elias Vanderstuyft's documentation project](https://github.com/Eliasvan/Linux-Force-Feedback)
  - [KLGD (Kernel Library for Gaming Devices)](KLGD.md).
 
-Kernel related links:
- - https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/input/ff-memless.c
- - https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/hid/hid-lg4ff.c
- - https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/hid/hid-logitech-hidpp.c
- - https://www.kernel.org/doc/Documentation/hid/hidraw.txt
- - https://github.com/edwin-v/linux-hid-lg4ff-next
-
 Others:
- - https://github.com/Eliasvan/Linux-Force-Feedback/wiki
  - https://lkml.org/lkml/2014/4/26/115
  - https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-529254481
  - https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-529150586
