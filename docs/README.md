@@ -34,8 +34,6 @@ how it all works.
 
 Others:
  - https://lkml.org/lkml/2014/4/26/115
- - https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-529254481
- - https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-529150586
  - https://steamcommunity.com/groups/linuxff/discussions/0/405692224235574471/
  - https://forum.scssoft.com/viewtopic.php?f=109&t=249622
  - https://www.desktopsimulators.com/forum/showthread.php?tid=378

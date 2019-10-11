@@ -4,9 +4,12 @@ This is a set of evolving tools with documentation to help understand and debug
 the FFB capabilities in GNU/Linux systems.
 
 The goal for this project is to raise awareness of issues in FFB, specially for
-steering wheels, help diagnose them and get more people involved on fixing
-them. This should be a starting point to get better FFB support in Linux and
-promote new projects.
+steering wheels, help diagnose them and help more people get involved on fixing
+them and promoting new projects.
+
+This project is intended as the very basic foundation to get help for other
+projects and initiatives. No intention to lead any effort but more to help the
+potential leading developers.
 
 Please, read the complete documentation in the [docs](docs/README.md)
 directory.

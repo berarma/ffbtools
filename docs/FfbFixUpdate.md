@@ -12,3 +12,4 @@ Arguments:
 To use it on Steam games go to game properties, click "Set launch options", enter this command:
   ```/home/user/ffbtools/bin/FfbFixUpdate.sh <device> [<logprefix>] -- %command%```
 
+Thanks to the [user jdinalt for the debugging and idea](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-528539637).

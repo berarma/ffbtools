@@ -40,15 +40,19 @@ write a modified driver that extends on the more generic `ff-core` driver using
 all features supported by the hardware. And then implement effect envelope
 emulation like the `ff-memless` driver does. Maybe this should be broken down
 as a `ff-no-so-memless` driver (excuse the name) and a new `hid-lg5ff` driver
-that extends on it.
+that extends on it. [Simon seems to support this
+idea](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-531274671).
 
-There might be other issues that should be addressed, like what happens when an
-application sends effects faster that the device can handle, but for now I
-think these are not as important.
+A potential problem that might need to be addressed is [the driver blocking on
+USB communications as stated by
+Edwin](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-534713123).
 
 It has been reported that the driver can stop an effect when trying to update
 it. This might be a bug in the driver or maybe a consequence of using
-`ff-memless`, we should figure out.
+`ff-memless`, we should figure out. [User jdinalt has
+posted](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-528539637)
+interesting information about the issue and even a patch for SDL that works
+around the problem.
 
 Related kernel files:
 
