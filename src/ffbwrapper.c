@@ -122,8 +122,10 @@ static void init()
         enable_features_hack = 1;
     }
 
-    report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d",
-            getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack);
+    if (enable_logger) {
+        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d",
+                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack);
+    }
 }
 
 static int checkDescriptor(int fd)
