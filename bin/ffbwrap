@@ -85,7 +85,7 @@ COMMAND="$1"
 shift
 
 if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
-    echo "Usage: $0 [--logger[=logfile]] [--update-fix] [--direction-fix] <device> -- <command>"
+    echo "Usage: $0 [--logger[=logfile]] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>"
     exit 1
 fi
 
