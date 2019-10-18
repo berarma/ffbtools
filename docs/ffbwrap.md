@@ -1,9 +1,9 @@
 # ffbwrap
 
-Runs a command tracking calls to the FFB subsystem. The calls can be logged or
-modified to test applications.
+Runs a command while tracking calls to the FFB subsystem. The calls can be
+logged or modified to test applications.
 
-Usage: `bin/ffbwrap [--logger[=logfile]] [--update-fix] [--direction-fix] <device> -- <command>`
+Usage: `bin/ffbwrap [--logger[=logfile]] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>`
 
 Arguments:
 
@@ -39,8 +39,11 @@ Apply the update fix:
 Report all features and log calls to a file:
   `ffbwrap --logger=/home/user/myapp --features-hack /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
 
+Apply the update and direction fixes:
+  `ffbwrap --update-fix --direction-fix /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
+
 To use it on Steam games go to game properties, click "Set launch options" and
-type the same command line replacing the <command> by `%command%`.
+use the same syntax replacing the <command> by `%command%`.
 
 Example:
   `ffbwrap --update-fix /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- %command%`

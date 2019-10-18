@@ -8,9 +8,21 @@ complete support, but there are some issues and no one seems to be working on
 them. What's worse, there's not much people with the knowledge to debug and fix
 them.
 
-This project aims to address the problem by providing easy tools for creating
-reports and testing issues. And at the same time help new developers understand
-how it all works.
+This project aims to address the problem by providing information and tools to
+help improve support and documentation.
+
+## Build
+
+Requirements:
+
+ - A recent kernel.
+ - GNU Make.
+ - GCC.
+ - GCC multilib support. We build 32bits and 64bits versions of the library so
+   we need compiler support for cross-compilation. This is commonly provided by
+   package `gcc-multilib`.
+
+Run `make` inside the project directory to build the tools.
 
 ## The tools
 
