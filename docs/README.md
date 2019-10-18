@@ -14,10 +14,8 @@ how it all works.
 
 ## The tools
 
- - [bin/FfbLogIoCalls.sh](FfbLogIoCalls.md): Run an application logging the calls related to FFB to a file.
- - [bin/FfbFixUpdate.sh](FfbFixUpdate.md): Work around an issue reported on
-  [ValveSoftware/Proton/issues/2366](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-539114450)
-  about the FFB effects being stopped when updating them.
+ - [ffbwrap](ffbwrap.md): Script that uses code injection via a wrapper library
+   to debug FFB in applications.
 
 ## Notes
 

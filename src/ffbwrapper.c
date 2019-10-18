@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
@@ -43,19 +44,27 @@
 
 #define report(...) snprintf(report_string, 512, __VA_ARGS__); output(report_string);
 
-static char report_string[512];
+static void init() __attribute__((constructor));
 
 static int dev_major = 0;
-
 static int dev_minor = 0;
+static int enable_logger = 0;
+static int enable_update_fix = 0;
+static int enable_direction_fix = 0;
+static int enable_features_hack = 0;
+static FILE *log_file = NULL;
+static char report_string[512];
 
 static void output(char *message)
 {
-    static FILE *f = NULL;
-    static int error = 0;
     static struct timespec t0 = {0, 0};
     struct timespec now;
     unsigned long reltime;
+    FILE *file;
+
+    if (!enable_logger) {
+        return;
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &now);
 
@@ -66,41 +75,59 @@ static void output(char *message)
 
     reltime = (now.tv_sec - t0.tv_sec) * 1.0e6 + (now.tv_nsec - t0.tv_nsec) / 1.0e3;
 
-    if (!error && f == NULL) {
+    if (log_file != NULL) {
+        file = log_file;
+    } else {
+        file = stdout;
+    }
+
+    fprintf(file, "%012lu: %s\n", reltime, message);
+    fflush(file);
+}
+
+static void init()
+{
+    const char *str_dev_major = getenv("FFBTOOLS_DEV_MAJOR");
+    const char *str_dev_minor = getenv("FFBTOOLS_DEV_MINOR");
+
+    if (str_dev_major != NULL && str_dev_minor != NULL) {
+        dev_major = strtol(str_dev_major, NULL, 0);
+        dev_minor = strtol(str_dev_minor, NULL, 0);
+    }
+
+    const char *str_logger = getenv("FFBTOOLS_LOGGER");
+    if (str_logger != NULL && strcmp(str_logger, "1") == 0) {
+        enable_logger = 1;
         const char *filename = getenv("FFBTOOLS_LOG_FILE");
         if (filename != NULL) {
-            f = fopen(filename, "w");
-            if (f == NULL) {
+            log_file = fopen(filename, "w");
+            if (log_file == NULL) {
                 printf("Cannot create log file.\n");
-                error = 1;
             }
         }
     }
 
-    if (error) {
-        return;
+    const char *str_update_fix = getenv("FFBTOOLS_UPDATE_FIX");
+    if (str_update_fix != NULL && strcmp(str_update_fix, "1") == 0) {
+        enable_update_fix = 1;
     }
 
-    if (f != NULL) {
-        fprintf(f, "%012lu: %s\n", reltime, message);
-        fflush(f);
-    } else {
-        printf("%012lu: %s\n", reltime, message);
+    const char *str_direction_fix = getenv("FFBTOOLS_DIRECTION_FIX");
+    if (str_direction_fix != NULL && strcmp(str_direction_fix, "1") == 0) {
+        enable_direction_fix = 1;
     }
+
+    const char *str_features_hack = getenv("FFBTOOLS_FEATURES_HACK");
+    if (str_features_hack != NULL && strcmp(str_features_hack, "1") == 0) {
+        enable_features_hack = 1;
+    }
+
+    report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d",
+            getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack);
 }
 
 static int checkDescriptor(int fd)
 {
-    if (dev_major == 0 && dev_minor == 0) {
-        const char *str_dev_major = getenv("FFBTOOLS_DEV_MAJOR");
-        const char *str_dev_minor = getenv("FFBTOOLS_DEV_MINOR");
-
-        if (str_dev_major != NULL && str_dev_minor != NULL) {
-            dev_major = strtol(str_dev_major, NULL, 0);
-            dev_minor = strtol(str_dev_minor, NULL, 0);
-        }
-    }
-
     if (dev_major != 0 && dev_minor != 0) {
         struct stat sb;
 
@@ -239,6 +266,12 @@ int ioctl(int fd, unsigned long request, char *argp)
                     effect->replay.length, effect->replay.delay);
 
             report("> IOCTL: Upload effect to device id: %d dir: %d type: %s, %s, params: { %s }", effect->id, direction, type, string, effect_params);
+
+            if (enable_direction_fix) {
+                effect->direction = 90 * 65536 / 360;
+                report("> IOCTL: Upload effect to device id: %d dir: %d type: %s, %s, params: { %s } (direction_fix)", effect->id, direction, type, string, effect_params);
+            }
+
             break;
     }
 
@@ -246,33 +279,53 @@ int ioctl(int fd, unsigned long request, char *argp)
 
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
-            strcpy(string, "");
-            if (testBit(FF_CONSTANT, argp)) strcat(string, " Constant");
-            if (testBit(FF_PERIODIC, argp)) {
-                strcat(string, " Periodic (");
-                if (testBit(FF_SQUARE, argp)) strcat(string, " Square");
-                if (testBit(FF_TRIANGLE, argp)) strcat(string, " Triangle");
-                if (testBit(FF_SINE, argp)) strcat(string, " Sine");
-                if (testBit(FF_SAW_UP, argp)) strcat(string, " Saw up");
-                if (testBit(FF_SAW_DOWN, argp)) strcat(string, " Saw down");
-                if (testBit(FF_CUSTOM, argp)) strcat(string, " Custom");
+            {
+                int passes = 0;
+                do {
+                    strcpy(string, "");
+                    if (testBit(FF_CONSTANT, argp)) strcat(string, " Constant");
+                    if (testBit(FF_PERIODIC, argp)) {
+                        strcat(string, " Periodic (");
+                        if (testBit(FF_SQUARE, argp)) strcat(string, " Square");
+                        if (testBit(FF_TRIANGLE, argp)) strcat(string, " Triangle");
+                        if (testBit(FF_SINE, argp)) strcat(string, " Sine");
+                        if (testBit(FF_SAW_UP, argp)) strcat(string, " Saw up");
+                        if (testBit(FF_SAW_DOWN, argp)) strcat(string, " Saw down");
+                        if (testBit(FF_CUSTOM, argp)) strcat(string, " Custom");
+                        strcat(string, " )");
+                    }
+                    if (testBit(FF_RAMP, argp)) strcat(string, " Ramp");
+                    if (testBit(FF_SPRING, argp)) strcat(string, " Spring");
+                    if (testBit(FF_FRICTION, argp)) strcat(string, " Friction");
+                    if (testBit(FF_DAMPER, argp)) strcat(string, " Damper");
+                    if (testBit(FF_RUMBLE, argp)) strcat(string, " Rumble");
+                    if (testBit(FF_INERTIA, argp)) strcat(string, " Inertia");
+                    if (testBit(FF_GAIN, argp)) strcat(string, " Gain");
+                    if (testBit(FF_AUTOCENTER, argp)) strcat(string, " Autocenter");
+                    report("< %d, %s", result, string);
+                    if (passes) {
+                        break;
+                    }
+                    if (enable_features_hack) {
+                        memset(argp, 255, _IOC_SIZE(request));
+                        passes++;
+                    }
+                } while (enable_features_hack);
             }
-            if (testBit(FF_RAMP, argp)) strcat(string, " Ramp");
-            if (testBit(FF_SPRING, argp)) strcat(string, " Spring");
-            if (testBit(FF_FRICTION, argp)) strcat(string, " Friction");
-            if (testBit(FF_DAMPER, argp)) strcat(string, " Damper");
-            if (testBit(FF_RUMBLE, argp)) strcat(string, " Rumble");
-            if (testBit(FF_INERTIA, argp)) strcat(string, " Inertia");
-            if (testBit(FF_GAIN, argp)) strcat(string, " Gain");
-            if (testBit(FF_AUTOCENTER, argp)) strcat(string, " Autocenter");
-            report("< %d, %s", result, string);
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
             report("< %d, effects: %d", result, *((int*)argp));
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
-            report("< %d, id: %d", result, effect->id)
+            report("< %d, id: %d", result, effect->id);
+
+            if (enable_update_fix && result < 0 && errno == EINVAL && effect->id >= 0) {
+                effect->id = -1;
+                result = _ioctl(fd, request, argp);
+                report("< %d, id: %d (update_fix)", result, effect->id);
+            }
+
             break;
     }
 

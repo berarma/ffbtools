@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+# Runs a command preloading libffbwrapper
+# 
+# Copyright 2019 Bernat Arlandis <bernat@hotmail.com>
+#
+# This file is part of ffbtools.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+OPTIONS=$(getopt --long 'logger::,update-fix,direction-fix,features-hack' -n "$0" -- "" "$@")
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+eval set -- "$OPTIONS"
+
+unset OPTIONS
+
+CURRENT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ -f "${CURRENT_DIR}/../build/libffbwrapper-i386.so" ]
+then
+    LIBDIR="${CURRENT_DIR}/../build"
+else
+    LIBDIR="/usr/local/lib"
+fi
+
+LD_PRELOAD="${LIBDIR}/libffbwrapper-x86_64.so ${LIBDIR}/libffbwrapper-i386.so ${LD_PRELOAD}"
+
+while true; do
+    case "$1" in
+        '--logger')
+            FFBTOOLS_LOGGER=1
+            if [ ! -z "$2" ]; then
+                FFBTOOLS_LOG_FILE="$2-$(date +%Y%m%d%H%M%S).log"
+            fi
+            shift 2
+            continue
+            ;;
+        '--update-fix')
+            FFBTOOLS_UPDATE_FIX=1
+            shift
+            continue
+            ;;
+        '--direction-fix')
+            FFBTOOLS_DIRECTION_FIX=1
+            shift
+            continue
+            ;;
+        '--features-hack')
+            FFBTOOLS_FEATURES_HACK=1
+            shift
+            continue
+            ;;
+        '--')
+            shift
+            break
+            ;;
+    esac
+done
+
+DEVICE_FILE=$(readlink -f "$1")
+
+if [ -n "$DEVICE_FILE" ]
+then
+    FFBTOOLS_DEV_MAJOR=0x$(stat --format="%t" "${DEVICE_FILE}")
+    FFBTOOLS_DEV_MINOR=0x$(stat --format="%T" "${DEVICE_FILE}")
+    shift
+fi
+
+COMMAND="$1"
+shift
+
+if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
+    echo "Usage: $0 [--logger[=logfile]] [--update-fix] [--direction-fix] <device> -- <command>"
+    exit 1
+fi
+
+if [ -z "${FFBTOOLS_LOGGER}" -a -z "${FFBTOOLS_UPDATE_FIX}" -a -z "${FFBTOOLS_DIRECTION_FIX}" -a -z "${FFBTOOLS_FEATURES_HACK}" ]; then
+    FFBTOOLS_LOGGER=1
+fi
+
+FFBTOOLS_DEVICE_NAME="$(eval $(udevadm info -q property -x /dev/input/event4) && echo "${ID_VENDOR} ${ID_MODEL//_/ }")"
+
+export LD_PRELOAD FFBTOOLS_DEVICE_NAME FFBTOOLS_DEV_MAJOR FFBTOOLS_DEV_MINOR FFBTOOLS_LOGGER FFBTOOLS_LOG_FILE FFBTOOLS_UPDATE_FIX FFBTOOLS_DIRECTION_FIX FFBTOOLS_FEATURES_HACK
+
+"${COMMAND}" "$@"

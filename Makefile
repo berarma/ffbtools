@@ -29,17 +29,19 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
-all: directories $(BUILD_DIR)/libffblogiocalls.so $(BUILD_DIR)/libffbfixupdate.so
+all: directories \
+	$(BUILD_DIR)/libffbwrapper-i386.so \
+	$(BUILD_DIR)/libffbwrapper-x86_64.so
 
 directories: $(BUILD_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/libffblogiocalls.so: $(SRC_DIR)/libffblogiocalls.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
+$(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -ldl
 
-$(BUILD_DIR)/libffbfixupdate.so: $(SRC_DIR)/libffbfixupdate.c
+$(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
