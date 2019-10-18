@@ -16,12 +16,15 @@ One or more of the following options should be used:
   `--logger[=<file-prefix>]`: Logs all calls to the standard output or to a file
   if the <file-prefix> is provided. A timestamp will be added to the
   <file-prefix>.
+
   `--update-fix`: Works around an issue found when updating FFB effect parameters.
   This issue is reported at [ValveSoftware/Proton/issues/2366](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-539114450) by @jdinalt
   with full debug information and the workaround that we have used here.
+
   `--direction-fix`: Apply a fix to the direction of the effect. Effects with only
   a vertical component are ignored so this fix sets an horizontal direction to
   all effects.
+
   `--features-hack`: Reports all effect types as supported. The effect types not
   supported by the device will later fail but it allows to log all the effects
   the application can generate.
@@ -31,20 +34,25 @@ If no option is used it will log to the standard output.
 ## Examples
 
 Log calls to a file:
+
   `ffbwrap --logger=/home/user/myapp /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
 
 Apply the update fix:
+
   `ffbwrap --update-fix /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
 
 Report all features and log calls to a file:
+
   `ffbwrap --logger=/home/user/myapp --features-hack /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
 
 Apply the update and direction fixes:
+
   `ffbwrap --update-fix --direction-fix /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- <command>`
 
 To use it on Steam games go to game properties, click "Set launch options" and
 use the same syntax replacing the <command> by `%command%`.
 
 Example:
+
   `ffbwrap --update-fix /dev/input/by-id/usb-Logitech_G29_Driving_Force_Racing_Wheel-event-joystick -- %command%`
 
