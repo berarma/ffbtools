@@ -29,7 +29,7 @@ eval set -- "$OPTIONS"
 
 unset OPTIONS
 
-CURRENT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+CURRENT_DIR=$(CDPATH= cd -- "$(dirname -- $(readlink -f "$0"))" && pwd)
 
 if [ -f "${CURRENT_DIR}/../build/libffbwrapper-i386.so" ]
 then
