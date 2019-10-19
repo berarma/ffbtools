@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-OPTIONS=$(getopt --long 'logger::,update-fix,direction-fix,features-hack' -n "$0" -- "" "$@")
+OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack' -n "$0" -- "" "$@")
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -44,9 +44,7 @@ while true; do
     case "$1" in
         '--logger')
             FFBTOOLS_LOGGER=1
-            if [ ! -z "$2" ]; then
-                FFBTOOLS_LOG_FILE="$2-$(date +%Y%m%d%H%M%S).log"
-            fi
+            FFBTOOLS_LOG_FILE="$2-$(date +%Y%m%d%H%M%S).log"
             shift 2
             continue
             ;;
@@ -85,12 +83,13 @@ COMMAND="$1"
 shift
 
 if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
-    echo "Usage: $0 [--logger[=logfile]] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>"
+    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>"
     exit 1
 fi
 
 if [ -z "${FFBTOOLS_LOGGER}" -a -z "${FFBTOOLS_UPDATE_FIX}" -a -z "${FFBTOOLS_DIRECTION_FIX}" -a -z "${FFBTOOLS_FEATURES_HACK}" ]; then
-    FFBTOOLS_LOGGER=1
+    echo "Error: At least one option must be used."
+    exit 1
 fi
 
 FFBTOOLS_DEVICE_NAME="$(eval $(udevadm info -q property -x /dev/input/event4) && echo "${ID_VENDOR} ${ID_MODEL//_/ }")"

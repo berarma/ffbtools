@@ -3,7 +3,7 @@
 Runs a command while tracking calls to the FFB subsystem. The calls can be
 logged or modified to test applications.
 
-Usage: `bin/ffbwrap [--logger[=logfile]] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>`
+Usage: `bin/ffbwrap [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>`
 
 Arguments:
 
@@ -13,9 +13,8 @@ Arguments:
 
 One or more of the following options should be used:
 
-  `--logger[=<file-prefix>]`: Logs all calls to the standard output or to a file
-  if the <file-prefix> is provided. A timestamp will be added to the
-  <file-prefix>.
+  `--logger=<file-prefix>`: Logs all calls to a file with prefix <file-prefix>.
+  A timestamp will be added to the file name.
 
   `--update-fix`: Works around an issue found when updating FFB effect parameters.
   This issue is reported at [ValveSoftware/Proton/issues/2366](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-539114450) by @jdinalt
@@ -28,8 +27,6 @@ One or more of the following options should be used:
   `--features-hack`: Reports all effect types as supported. The effect types not
   supported by the device will later fail but it allows to log all the effects
   the application can generate.
-
-If no option is used it will log to the standard output.
 
 ## Examples
 

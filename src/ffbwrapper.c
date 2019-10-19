@@ -60,7 +60,6 @@ static void output(char *message)
     static struct timespec t0 = {0, 0};
     struct timespec now;
     unsigned long reltime;
-    FILE *file;
 
     if (!enable_logger) {
         return;
@@ -75,14 +74,8 @@ static void output(char *message)
 
     reltime = (now.tv_sec - t0.tv_sec) * 1.0e6 + (now.tv_nsec - t0.tv_nsec) / 1.0e3;
 
-    if (log_file != NULL) {
-        file = log_file;
-    } else {
-        file = stdout;
-    }
-
-    fprintf(file, "%012lu: %s\n", reltime, message);
-    fflush(file);
+    fprintf(log_file, "%012lu: %s\n", reltime, message);
+    fflush(log_file);
 }
 
 static void init()
@@ -97,12 +90,13 @@ static void init()
 
     const char *str_logger = getenv("FFBTOOLS_LOGGER");
     if (str_logger != NULL && strcmp(str_logger, "1") == 0) {
-        enable_logger = 1;
         const char *filename = getenv("FFBTOOLS_LOG_FILE");
         if (filename != NULL) {
-            log_file = fopen(filename, "w");
+            log_file = fopen(filename, "a");
             if (log_file == NULL) {
                 printf("Cannot create log file.\n");
+            } else {
+                enable_logger = 1;
             }
         }
     }
@@ -122,7 +116,7 @@ static void init()
         enable_features_hack = 1;
     }
 
-    if (enable_logger) {
+    if (enable_logger && ftell(log_file) == 0) {
         report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack);
     }
