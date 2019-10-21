@@ -87,11 +87,6 @@ if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}"
     exit 1
 fi
 
-if [ -z "${FFBTOOLS_LOGGER}" -a -z "${FFBTOOLS_UPDATE_FIX}" -a -z "${FFBTOOLS_DIRECTION_FIX}" -a -z "${FFBTOOLS_FEATURES_HACK}" ]; then
-    echo "Error: At least one option must be used."
-    exit 1
-fi
-
 FFBTOOLS_DEVICE_NAME="$(eval $(udevadm info -q property -x "${DEVICE_FILE}") && echo "${ID_VENDOR} ${ID_MODEL//_/ }")"
 
 export LD_PRELOAD FFBTOOLS_DEVICE_NAME FFBTOOLS_DEV_MAJOR FFBTOOLS_DEV_MINOR FFBTOOLS_LOGGER FFBTOOLS_LOG_FILE FFBTOOLS_UPDATE_FIX FFBTOOLS_DIRECTION_FIX FFBTOOLS_FEATURES_HACK

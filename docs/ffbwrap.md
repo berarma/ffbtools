@@ -11,7 +11,7 @@ Arguments:
    the `/dev/input/` tree.
  - `<command>`: Command that runs the application we want to log.
 
-One or more of the following options should be used:
+One or more of the following options can be used:
 
   `--logger=<file-prefix>`: Logs all calls to a file with prefix <file-prefix>.
   A timestamp will be added to the file name.
