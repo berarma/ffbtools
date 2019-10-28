@@ -265,7 +265,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                     effect->trigger.button, effect->trigger.interval,
                     effect->replay.length, effect->replay.delay);
 
-            report("> IOCTL: Upload effect to device id: %d dir: %d type: %s, %s, params: { %s }", effect->id, direction, type, string, effect_params);
+            report("> IOCTL: Upload effect to device. id: %d dir: %d type: %s, %s, params: { %s }", effect->id, direction, type, string, effect_params);
 
             if (enable_direction_fix && effect->direction != (90 * 65536 / 360) && effect->direction != (270 * 65536 / 360)) {
                 effect->direction = 90 * 65536 / 360;
