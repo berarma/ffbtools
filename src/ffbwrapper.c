@@ -269,6 +269,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             if (enable_direction_fix && effect->direction != (90 * 65536 / 360) && effect->direction != (270 * 65536 / 360)) {
                 effect->direction = 90 * 65536 / 360;
+                direction = (long) effect->direction * 360 / 65536;
                 report("> IOCTL: Upload effect to device id: %d dir: %d type: %s, %s, params: { %s } (direction_fix)", effect->id, direction, type, string, effect_params);
             }
 
