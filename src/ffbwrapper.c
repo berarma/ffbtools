@@ -26,6 +26,7 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,6 +159,9 @@ int ioctl(int fd, unsigned long request, char *argp)
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
             report("> IOCTL: Get maximum number of simultaneous effects in memory.");
+            break;
+        case ioctlRequestCode(EVIOCRMFF):
+            report("> IOCTL: Remove effect from memory: %ld.", (intptr_t)argp);
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
@@ -308,6 +312,9 @@ int ioctl(int fd, unsigned long request, char *argp)
                     }
                 } while (enable_features_hack);
             }
+            break;
+        case ioctlRequestCode(EVIOCRMFF):
+            report("< %d", result);
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
             report("< %d, effects: %d", result, *((int*)argp));
