@@ -175,6 +175,27 @@ int ioctl(int fd, unsigned long request, char *argp)
                             effect->u.rumble.strong_magnitude,
                             effect->u.rumble.weak_magnitude);
                     break;
+                case FF_CONSTANT:
+                    type = "FF_CONSTANT";
+                    snprintf(effect_params, 512,
+                            "level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                            effect->u.constant.level,
+                            effect->u.constant.envelope.attack_length,
+                            effect->u.constant.envelope.attack_level,
+                            effect->u.constant.envelope.fade_length,
+                            effect->u.constant.envelope.fade_level);
+
+                    break;
+                case FF_RAMP:
+                    type = "FF_RAMP";
+                    snprintf(effect_params, 512, "start_level:%d, end_level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                            effect->u.ramp.start_level,
+                            effect->u.ramp.end_level,
+                            effect->u.ramp.envelope.attack_length,
+                            effect->u.ramp.envelope.attack_level,
+                            effect->u.ramp.envelope.fade_length,
+                            effect->u.ramp.envelope.fade_level);
+                    break;
                 case FF_PERIODIC:
                     type = "FF_PERIODIC";
                     char *waveform = "UNKNOWN";
@@ -209,33 +230,8 @@ int ioctl(int fd, unsigned long request, char *argp)
                             effect->u.periodic.envelope.fade_length,
                             effect->u.periodic.envelope.fade_level);
                     break;
-                case FF_CONSTANT:
-                    type = "FF_CONSTANT";
-                    snprintf(effect_params, 512,
-                            "level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
-                            effect->u.constant.level,
-                            effect->u.constant.envelope.attack_length,
-                            effect->u.constant.envelope.attack_level,
-                            effect->u.constant.envelope.fade_length,
-                            effect->u.constant.envelope.fade_level);
-
-                    break;
                 case FF_SPRING:
                     type = "FF_SPRING";
-                    snprintf(effect_params, 512,
-                            "X(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d); Y(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d)",
-                            effect->u.condition[0].right_saturation,
-                            effect->u.condition[0].left_saturation,
-                            effect->u.condition[0].right_coeff,
-                            effect->u.condition[0].left_coeff,
-                            effect->u.condition[0].deadband,
-                            effect->u.condition[0].center,
-                            effect->u.condition[1].right_saturation,
-                            effect->u.condition[1].left_saturation,
-                            effect->u.condition[1].right_coeff,
-                            effect->u.condition[1].left_coeff,
-                            effect->u.condition[1].deadband,
-                            effect->u.condition[1].center);
                     break;
                 case FF_FRICTION:
                     type = "FF_FRICTION";
@@ -246,16 +242,23 @@ int ioctl(int fd, unsigned long request, char *argp)
                 case FF_INERTIA:
                     type = "FF_INERTIA";
                     break;
-                case FF_RAMP:
-                    type = "FF_RAMP";
-                    snprintf(effect_params, 512, "start_level:%d, end_level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
-                            effect->u.ramp.start_level,
-                            effect->u.ramp.end_level,
-                            effect->u.ramp.envelope.attack_length,
-                            effect->u.ramp.envelope.attack_level,
-                            effect->u.ramp.envelope.fade_length,
-                            effect->u.ramp.envelope.fade_level);
-                    break;
+            }
+
+            if (effect->type == FF_SPRING || effect->type == FF_FRICTION || effect->type == FF_DAMPER || effect->type == FF_INERTIA) {
+                snprintf(effect_params, 512,
+                        "X(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d); Y(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d)",
+                        effect->u.condition[0].right_saturation,
+                        effect->u.condition[0].left_saturation,
+                        effect->u.condition[0].right_coeff,
+                        effect->u.condition[0].left_coeff,
+                        effect->u.condition[0].deadband,
+                        effect->u.condition[0].center,
+                        effect->u.condition[1].right_saturation,
+                        effect->u.condition[1].left_saturation,
+                        effect->u.condition[1].right_coeff,
+                        effect->u.condition[1].left_coeff,
+                        effect->u.condition[1].deadband,
+                        effect->u.condition[1].center);
             }
 
             int direction = (long) effect->direction * 360 / 65536;
