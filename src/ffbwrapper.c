@@ -43,7 +43,7 @@
 
 #define testBit(bit, array) ((array[bit/8] >> bit%8) & 1)
 
-#define report(...) snprintf(report_string, 512, __VA_ARGS__); output(report_string);
+#define report(...) snprintf(report_string, sizeof(report_string), __VA_ARGS__); output(report_string);
 
 static void init() __attribute__((constructor));
 
@@ -54,7 +54,7 @@ static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
 static FILE *log_file = NULL;
-static char report_string[512];
+static char report_string[1024];
 
 static void output(char *message)
 {
@@ -141,8 +141,8 @@ static int checkDescriptor(int fd)
 int ioctl(int fd, unsigned long request, char *argp)
 {
     static int (*_ioctl)(int fd, unsigned long request, char *argp) = NULL;
-    static char string[512];
-    static char effect_params[512];
+    static char string[256];
+    static char effect_params[256];
     struct ff_effect *effect = NULL;
 
     if (!_ioctl) {
@@ -161,7 +161,7 @@ int ioctl(int fd, unsigned long request, char *argp)
             report("> IOCTL: Get maximum number of simultaneous effects in memory.");
             break;
         case ioctlRequestCode(EVIOCRMFF):
-            report("> IOCTL: Remove effect from memory: %ld.", (intptr_t)argp);
+            report("> IOCTL: Remove effect from memory: %d.", (int)((intptr_t)argp));
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
@@ -170,14 +170,14 @@ int ioctl(int fd, unsigned long request, char *argp)
             switch (effect->type) {
                 case FF_RUMBLE:
                     type = "FF_RUMBLE";
-                    snprintf(effect_params, 512,
+                    snprintf(effect_params, sizeof(effect_params),
                             "strong:%u, weak:%u",
                             effect->u.rumble.strong_magnitude,
                             effect->u.rumble.weak_magnitude);
                     break;
                 case FF_CONSTANT:
                     type = "FF_CONSTANT";
-                    snprintf(effect_params, 512,
+                    snprintf(effect_params, sizeof(effect_params),
                             "level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
                             effect->u.constant.level,
                             effect->u.constant.envelope.attack_length,
@@ -188,7 +188,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                     break;
                 case FF_RAMP:
                     type = "FF_RAMP";
-                    snprintf(effect_params, 512, "start_level:%d, end_level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                    snprintf(effect_params, sizeof(effect_params), "start_level:%d, end_level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
                             effect->u.ramp.start_level,
                             effect->u.ramp.end_level,
                             effect->u.ramp.envelope.attack_length,
@@ -219,7 +219,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                             waveform = "CUSTOM";
                             break;
                     }
-                    snprintf(effect_params, 512,
+                    snprintf(effect_params, sizeof(effect_params),
                             "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
                             waveform, effect->u.periodic.period,
                             effect->u.periodic.magnitude,
@@ -245,7 +245,7 @@ int ioctl(int fd, unsigned long request, char *argp)
             }
 
             if (effect->type == FF_SPRING || effect->type == FF_FRICTION || effect->type == FF_DAMPER || effect->type == FF_INERTIA) {
-                snprintf(effect_params, 512,
+                snprintf(effect_params, sizeof(effect_params),
                         "X(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d); Y(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d)",
                         effect->u.condition[0].right_saturation,
                         effect->u.condition[0].left_saturation,
@@ -263,7 +263,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             int direction = (long) effect->direction * 360 / 65536;
 
-            snprintf(string, 512,
+            snprintf(string, sizeof(string),
                     "trigger(button:%d, interval:%d), replay(length:%d, delay:%d)",
                     effect->trigger.button, effect->trigger.interval,
                     effect->replay.length, effect->replay.delay);
