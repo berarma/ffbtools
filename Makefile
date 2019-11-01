@@ -28,12 +28,14 @@ INC_DIRS := $(shell find $(SRC_DIR) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wformat-truncation
+LDLIBS ?= -lm
 
-all: directories \
+all: $(BUILD_DIR) \
 	$(BUILD_DIR)/libffbwrapper-i386.so \
-	$(BUILD_DIR)/libffbwrapper-x86_64.so
-
-directories: $(BUILD_DIR)
+	$(BUILD_DIR)/libffbwrapper-x86_64.so \
+	$(BUILD_DIR)/lgfftest \
+	$(BUILD_DIR)/ffcfstress \
+	$(BUILD_DIR)/test
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -43,6 +45,15 @@ $(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
 
 $(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
+
+$(BUILD_DIR)/lgfftest: $(BUILD_DIR)/lgfftest.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+$(BUILD_DIR)/ffcfstress: $(BUILD_DIR)/ffcfstress.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+
+$(BUILD_DIR)/test: $(BUILD_DIR)/test.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
