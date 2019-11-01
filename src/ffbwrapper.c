@@ -55,6 +55,7 @@ static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
+static short last_effect_used = 16;
 
 static void output(char *message)
 {
@@ -268,12 +269,12 @@ int ioctl(int fd, unsigned long request, char *argp)
                     effect->trigger.button, effect->trigger.interval,
                     effect->replay.length, effect->replay.delay);
 
-            report("> IOCTL: Upload effect to device. id: %d dir: %d type: %s, %s, params: { %s }", effect->id, direction, type, string, effect_params);
+            report("> IOCTL: Upload effect to device. id: %d dir: %d (%d) type: %s, %s, params: { %s }", effect->id, effect->direction, direction, type, string, effect_params);
 
             if (enable_direction_fix && (effect->direction == 0 || effect->direction == 0x8000)) {
                 effect->direction -= 0x4000;
                 direction = (long) effect->direction * 360 / 65536;
-                report("> IOCTL: Upload effect to device id: %d dir: %d type: %s, %s, params: { %s } (direction_fix)", effect->id, direction, type, string, effect_params);
+                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (direction_fix)", effect->id, effect->direction, direction, type, string, effect_params);
             }
 
             break;
@@ -306,9 +307,11 @@ int ioctl(int fd, unsigned long request, char *argp)
                     if (testBit(FF_INERTIA, argp)) strcat(string, " Inertia");
                     if (testBit(FF_GAIN, argp)) strcat(string, " Gain");
                     if (testBit(FF_AUTOCENTER, argp)) strcat(string, " Autocenter");
-                    report("< %d, %s", result, string);
                     if (passes) {
+                        report("< %d, %s (features hack)", result, string);
                         break;
+                    } else {
+                        report("< %d, %s", result, string);
                     }
                     if (enable_features_hack) {
                         memset(argp, 255, _IOC_SIZE(request));
@@ -319,6 +322,10 @@ int ioctl(int fd, unsigned long request, char *argp)
             break;
         case ioctlRequestCode(EVIOCRMFF):
             report("< %d", result);
+            if (enable_features_hack && result != 0) {
+                result = 0;
+                report("< %d (features hack)", result);
+            }
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
             report("< %d, effects: %d", result, *((int*)argp));
@@ -333,6 +340,13 @@ int ioctl(int fd, unsigned long request, char *argp)
                 report("< %d, id: %d (update_fix)", result, effect->id);
             }
 
+            if (enable_features_hack && result != 0) {
+                if (effect->id == -1) {
+                    effect->id = last_effect_used++;
+                }
+                result = 0;
+                report("< %d, id: %d (features hack)", result, effect->id);
+            }
             break;
     }
 
@@ -373,6 +387,11 @@ ssize_t write(int fd, const void *buf, size_t num)
     int result = _write(fd, buf, num);
 
     report("< %d", result);
+
+    if (enable_features_hack && result != 0 && event->code < FF_MAX_EFFECTS) {
+        result = 0;
+        report("< %d (features hack)", result);
+    }
 
     return result;
 }
