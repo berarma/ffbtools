@@ -27,7 +27,7 @@ DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(SRC_DIR) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wformat-truncation
+CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wall
 LDLIBS ?= -lm
 
 all: $(BUILD_DIR) \
