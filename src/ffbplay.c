@@ -490,7 +490,6 @@ void main_menu()
 int main(int argc, char * argv[])
 {
     const char *device_name;
-    struct ff_effect effect;
 
     if (argc == 2) {
         device_name = argv[1];
