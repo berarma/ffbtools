@@ -28,6 +28,7 @@ Run `make` inside the project directory to build the tools.
 
  - [ffbwrap](ffbwrap.md): Script that uses code injection via a wrapper library
    to debug FFB in applications.
+ - [ffbplay](ffbplay.md): Console application to test FFB.
 
 ## Notes
 

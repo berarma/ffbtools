@@ -32,7 +32,8 @@ LDLIBS ?= -lm
 
 all: $(BUILD_DIR) \
 	$(BUILD_DIR)/libffbwrapper-i386.so \
-	$(BUILD_DIR)/libffbwrapper-x86_64.so
+	$(BUILD_DIR)/libffbwrapper-x86_64.so \
+	$(BUILD_DIR)/ffbplay
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -43,6 +44,8 @@ $(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
 $(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
 
+$(BUILD_DIR)/ffbplay: $(BUILD_DIR)/ffbplay.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
