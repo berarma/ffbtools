@@ -38,7 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define print_option(option, text, ...) printf("  %c. " text "\n", option __VA_OPT__(,) __VA_ARGS__)
+#define print_option(option, text, ...) printf("  %c. " text "\n", option, ##__VA_ARGS__)
 
 int device_handle;
 
