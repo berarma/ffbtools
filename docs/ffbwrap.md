@@ -28,6 +28,9 @@ One or more of the following options can be used:
   supported by the device will later fail but it allows to log all the effects
   the application can generate.
 
+  `--force-inversion`: Invert the force feedback forces. It can be used
+  together with `--direction-fix`.
+
 ## Examples
 
 Log calls to a file:

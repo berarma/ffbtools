@@ -53,6 +53,7 @@ static int enable_logger = 0;
 static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
+static int enable_force_inversion = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
@@ -116,6 +117,11 @@ static void init()
     const char *str_features_hack = getenv("FFBTOOLS_FEATURES_HACK");
     if (str_features_hack != NULL && strcmp(str_features_hack, "1") == 0) {
         enable_features_hack = 1;
+    }
+
+    const char *str_force_inversion = getenv("FFBTOOLS_FORCE_INVERSION");
+    if (str_force_inversion != NULL && strcmp(str_force_inversion, "1") == 0) {
+        enable_force_inversion = 1;
     }
 
     if (enable_logger && ftell(log_file) == 0) {
@@ -275,6 +281,12 @@ int ioctl(int fd, unsigned long request, char *argp)
                 effect->direction -= 0x4000;
                 direction = (long) effect->direction * 360 / 65536;
                 report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (direction_fix)", effect->id, effect->direction, direction, type, string, effect_params);
+            }
+
+            if (enable_force_inversion) {
+                effect->direction -= 0x8000;
+                direction = (long) effect->direction * 360 / 65536;
+                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (force inversion)", effect->id, effect->direction, direction, type, string, effect_params);
             }
 
             break;

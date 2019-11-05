@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack' -n "$0" -- "" "$@")
+OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack,force-inversion' -n "$0" -- "" "$@")
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -63,6 +63,11 @@ while true; do
             shift
             continue
             ;;
+        '--force-inversion')
+            FFBTOOLS_FORCE_INVERSION=1
+            shift
+            continue
+            ;;
         '--')
             shift
             break
@@ -83,7 +88,7 @@ COMMAND="$1"
 shift
 
 if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
-    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] <device> -- <command>"
+    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] [--force-inversion] <device> -- <command>"
     exit 1
 fi
 
