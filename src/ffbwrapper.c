@@ -125,8 +125,8 @@ static void init()
     }
 
     if (enable_logger && ftell(log_file) == 0) {
-        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d",
-                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack);
+        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d, ENABLE_FORCE_INVERSION=%d",
+                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack, enable_force_inversion);
     }
 }
 
