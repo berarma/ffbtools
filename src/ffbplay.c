@@ -218,8 +218,8 @@ void menu_effect_parameters(struct ff_effect *effect)
                 envelope = &effect->u.constant.envelope;
                 break;
             case FF_RAMP:
-                print_option('e', "Level: %d", effect->u.ramp.start_level);
-                print_option('f', "Level: %d", effect->u.ramp.end_level);
+                print_option('e', "Start level: %d", effect->u.ramp.start_level);
+                print_option('f', "End level: %d", effect->u.ramp.end_level);
                 envelope = &effect->u.ramp.envelope;
                 break;
             case FF_PERIODIC:
