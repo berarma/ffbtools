@@ -385,8 +385,7 @@ void menu_upload_effect()
             effect.u.periodic.waveform = FF_SAW_DOWN;
             break;
         case 'c':
-            effect.type = FF_PERIODIC;
-            effect.u.periodic.waveform = FF_RUMBLE;
+            effect.type = FF_RUMBLE;
             break;
     }
 
