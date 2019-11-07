@@ -209,116 +209,120 @@ void menu_effect_parameters(struct ff_effect *effect)
     char option;
 
     do {
-        print_option('a', "Direction: %u", effect->direction);
-        print_option('b', "Replay length: %u", effect->replay.length);
-        print_option('c', "Replay delay: %u", effect->replay.delay);
+        print_option('a', "id: %d", effect->id);
+        print_option('b', "Direction: %u", effect->direction);
+        print_option('c', "Replay length: %u", effect->replay.length);
+        print_option('d', "Replay delay: %u", effect->replay.delay);
         switch (effect->type) {
             case FF_CONSTANT:
-                print_option('d', "Level: %d", effect->u.constant.level);
+                print_option('e', "Level: %d", effect->u.constant.level);
                 envelope = &effect->u.constant.envelope;
                 break;
             case FF_RAMP:
-                print_option('e', "Start level: %d", effect->u.ramp.start_level);
-                print_option('f', "End level: %d", effect->u.ramp.end_level);
+                print_option('f', "Start level: %d", effect->u.ramp.start_level);
+                print_option('g', "End level: %d", effect->u.ramp.end_level);
                 envelope = &effect->u.ramp.envelope;
                 break;
             case FF_PERIODIC:
-                print_option('g', "Period: %u", effect->u.periodic.period);
-                print_option('h', "Magnitude: %d", effect->u.periodic.magnitude);
-                print_option('i', "Offset: %d", effect->u.periodic.offset);
-                print_option('j', "Phase: %u", effect->u.periodic.phase);
+                print_option('h', "Period: %u", effect->u.periodic.period);
+                print_option('i', "Magnitude: %d", effect->u.periodic.magnitude);
+                print_option('j', "Offset: %d", effect->u.periodic.offset);
+                print_option('k', "Phase: %u", effect->u.periodic.phase);
                 envelope = &effect->u.periodic.envelope;
                 break;
             case FF_SPRING:
             case FF_DAMPER:
             case FF_FRICTION:
             case FF_INERTIA:
-                print_option('k', "Right saturation: %u", effect->u.condition[0].right_saturation);
-                print_option('l', "Left saturation: %u", effect->u.condition[0].right_saturation);
-                print_option('m', "Right coeff: %d", effect->u.condition[0].right_coeff);
-                print_option('n', "Right coeff: %d", effect->u.condition[0].left_coeff);
-                print_option('o', "Deadband: %u", effect->u.condition[0].deadband);
-                print_option('p', "Center: %d", effect->u.condition[0].center);
+                print_option('l', "Right saturation: %u", effect->u.condition[0].right_saturation);
+                print_option('m', "Left saturation: %u", effect->u.condition[0].right_saturation);
+                print_option('n', "Right coeff: %d", effect->u.condition[0].right_coeff);
+                print_option('o', "Right coeff: %d", effect->u.condition[0].left_coeff);
+                print_option('p', "Deadband: %u", effect->u.condition[0].deadband);
+                print_option('q', "Center: %d", effect->u.condition[0].center);
                 break;
             case FF_RUMBLE:
-                print_option('q', "Strong magnitude: %u", effect->u.rumble.strong_magnitude);
-                print_option('r', "Weak magnitude: %u", effect->u.rumble.weak_magnitude);
+                print_option('r', "Strong magnitude: %u", effect->u.rumble.strong_magnitude);
+                print_option('s', "Weak magnitude: %u", effect->u.rumble.weak_magnitude);
                 break;
         }
         if (envelope) {
-            print_option('s', "Attack length: %u", envelope->attack_length);
-            print_option('t', "Attack level: %u", envelope->attack_level);
-            print_option('u', "Fade length: %u", envelope->fade_length);
-            print_option('v', "Fade level: %u", envelope->fade_level);
+            print_option('t', "Attack length: %u", envelope->attack_length);
+            print_option('u', "Attack level: %u", envelope->attack_level);
+            print_option('v', "Fade length: %u", envelope->fade_length);
+            print_option('w', "Fade level: %u", envelope->fade_level);
         }
 
         option = read_option("Change parameter", "abcdefghijklmnopqrstuv\n");
 
         switch (option) {
             case 'a':
-                effect->direction = read_int("New direction");
+                effect->id = read_int("New id:");
                 break;
             case 'b':
-                effect->replay.length = read_int("New replay length");
+                effect->direction = read_int("New direction");
                 break;
             case 'c':
-                effect->replay.delay = read_int("New replay delay");
+                effect->replay.length = read_int("New replay length");
                 break;
             case 'd':
-                effect->u.constant.level = read_int("New level");
+                effect->replay.delay = read_int("New replay delay");
                 break;
             case 'e':
-                effect->u.ramp.start_level = read_int("New start level");
+                effect->u.constant.level = read_int("New level");
                 break;
             case 'f':
-                effect->u.ramp.end_level = read_int("New end level");
+                effect->u.ramp.start_level = read_int("New start level");
                 break;
             case 'g':
-                effect->u.periodic.period = read_int("New period");
+                effect->u.ramp.end_level = read_int("New end level");
                 break;
             case 'h':
-                effect->u.periodic.magnitude = read_int("New magnitude");
+                effect->u.periodic.period = read_int("New period");
                 break;
             case 'i':
-                effect->u.periodic.offset = read_int("New offset");
+                effect->u.periodic.magnitude = read_int("New magnitude");
                 break;
             case 'j':
-                effect->u.periodic.phase = read_int("New phase");
+                effect->u.periodic.offset = read_int("New offset");
                 break;
             case 'k':
-                effect->u.condition[0].right_saturation = read_int("New right saturation");
+                effect->u.periodic.phase = read_int("New phase");
                 break;
             case 'l':
-                effect->u.condition[0].left_saturation = read_int("New left saturation");
+                effect->u.condition[0].right_saturation = read_int("New right saturation");
                 break;
             case 'm':
-                effect->u.condition[0].right_coeff = read_int("New right coeff");
+                effect->u.condition[0].left_saturation = read_int("New left saturation");
                 break;
             case 'n':
-                effect->u.condition[0].left_coeff = read_int("New left coeff");
+                effect->u.condition[0].right_coeff = read_int("New right coeff");
                 break;
             case 'o':
-                effect->u.condition[0].deadband = read_int("New deadband");
+                effect->u.condition[0].left_coeff = read_int("New left coeff");
                 break;
             case 'p':
-                effect->u.condition[0].center = read_int("New center");
+                effect->u.condition[0].deadband = read_int("New deadband");
                 break;
             case 'q':
-                effect->u.rumble.strong_magnitude = read_int("New strong magnitude");
+                effect->u.condition[0].center = read_int("New center");
                 break;
             case 'r':
-                effect->u.rumble.weak_magnitude = read_int("New weak magnitude");
+                effect->u.rumble.strong_magnitude = read_int("New strong magnitude");
                 break;
             case 's':
-                envelope->attack_length = read_int("New attack length");
+                effect->u.rumble.weak_magnitude = read_int("New weak magnitude");
                 break;
             case 't':
-                envelope->attack_level = read_int("New attack level");
+                envelope->attack_length = read_int("New attack length");
                 break;
             case 'u':
-                envelope->fade_length = read_int("New attack length");
+                envelope->attack_level = read_int("New attack level");
                 break;
             case 'v':
+                envelope->fade_length = read_int("New attack length");
+                break;
+            case 'w':
                 envelope->fade_level = read_int("New attack level");
                 break;
         }
