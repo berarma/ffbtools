@@ -391,6 +391,8 @@ void menu_upload_effect()
         case 'c':
             effect.type = FF_RUMBLE;
             break;
+        case '0':
+            return;
     }
 
     init_effect(&effect);
