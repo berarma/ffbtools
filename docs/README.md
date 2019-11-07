@@ -42,6 +42,8 @@ Run `make` inside the project directory to build the tools.
  - [SDL2 Force Feedback Support](https://wiki.libsdl.org/CategoryForceFeedback).
  - [Elias Vanderstuyft's documentation project](https://github.com/Eliasvan/Linux-Force-Feedback)
  - [KLGD (Kernel Library for Gaming Devices)](KLGD.md).
+ - [ff-memless-next](https://gitorious.org/linux-ff-memless-next/linux-ff-memless-next).
+ - [(Racing) Car Steering Forces EXPLAINED!](https://www.youtube.com/watch?v=pCq01LHaIVg).
 
 Others:
  - https://lkml.org/lkml/2014/4/26/115
