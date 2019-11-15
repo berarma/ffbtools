@@ -54,6 +54,7 @@ static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
+static int ignore_set_gain = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
@@ -124,9 +125,14 @@ static void init()
         enable_force_inversion = 1;
     }
 
+    const char *str_ignore_set_gain = getenv("FFBTOOLS_IGNORE_SET_GAIN");
+    if (str_ignore_set_gain != NULL && strcmp(str_ignore_set_gain, "1") == 0) {
+        ignore_set_gain = 1;
+    }
+
     if (enable_logger && ftell(log_file) == 0) {
-        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d, ENABLE_FORCE_INVERSION=%d",
-                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack, enable_force_inversion);
+        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d, ENABLE_FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d",
+                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack, enable_force_inversion, ignore_set_gain);
     }
 }
 
@@ -369,6 +375,7 @@ ssize_t write(int fd, const void *buf, size_t num)
 {
     static ssize_t (*_write)(int fd, const void *buf, size_t num) = NULL;
     struct input_event *event = NULL;
+    int result;
 
     if (!_write) {
         _write = dlsym(RTLD_NEXT, "write");
@@ -382,7 +389,11 @@ ssize_t write(int fd, const void *buf, size_t num)
 
     switch (event->code) {
         case FF_GAIN:
-            report("> WRITE: Set FF gain (%d).", event->value);
+            if (ignore_set_gain) {
+                report("> WRITE: Set FF gain (%d). (ignored)", event->value);
+            } else {
+                report("> WRITE: Set FF gain (%d).", event->value);
+            }
             break;
         case FF_AUTOCENTER:
             report("> WRITE: Set autocenter strength (%d).", event->value);
@@ -396,7 +407,11 @@ ssize_t write(int fd, const void *buf, size_t num)
             break;
     }
 
-    int result = _write(fd, buf, num);
+    if (!ignore_set_gain || event->code != FF_GAIN) {
+        result = _write(fd, buf, num);
+    } else {
+        result = 0;
+    }
 
     report("< %d", result);
 
