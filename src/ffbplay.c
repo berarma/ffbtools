@@ -253,7 +253,7 @@ void menu_effect_parameters(struct ff_effect *effect)
             print_option('w', "Fade level: %u", envelope->fade_level);
         }
 
-        option = read_option("Change parameter", "abcdefghijklmnopqrstuv\n");
+        option = read_option("Change parameter", "abcdefghijklmnopqrstuvw\n");
 
         switch (option) {
             case 'a':
