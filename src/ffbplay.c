@@ -237,7 +237,7 @@ void menu_effect_parameters(struct ff_effect *effect)
                 print_option('l', "Right saturation: %u", effect->u.condition[0].right_saturation);
                 print_option('m', "Left saturation: %u", effect->u.condition[0].right_saturation);
                 print_option('n', "Right coeff: %d", effect->u.condition[0].right_coeff);
-                print_option('o', "Right coeff: %d", effect->u.condition[0].left_coeff);
+                print_option('o', "Left coeff: %d", effect->u.condition[0].left_coeff);
                 print_option('p', "Deadband: %u", effect->u.condition[0].deadband);
                 print_option('q', "Center: %d", effect->u.condition[0].center);
                 break;
