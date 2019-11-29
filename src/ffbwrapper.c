@@ -79,7 +79,7 @@ static void output(char *message)
 
     reltime = (now.tv_sec - t0.tv_sec) * 1.0e6 + (now.tv_nsec - t0.tv_nsec) / 1.0e3;
 
-    fprintf(log_file, "%012lu: %s\n", reltime, message);
+    fprintf(log_file, "%012lu %s\n", reltime, message);
     fflush(log_file);
 }
 
@@ -179,13 +179,13 @@ int ioctl(int fd, unsigned long request, char *argp)
 
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
-            report("> IOCTL: Query force feedback features.");
+            report("> QUERY # Query force feedback features.");
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
-            report("> IOCTL: Get maximum number of simultaneous effects in memory.");
+            report("> SLOTS # Get maximum number of simultaneous effects in memory.");
             break;
         case ioctlRequestCode(EVIOCRMFF):
-            report("> IOCTL: Remove effect from memory: %d.", (int)((intptr_t)argp));
+            report("> REMOVE %d # Remove effect from memory.", (int)((intptr_t)argp));
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
@@ -193,26 +193,28 @@ int ioctl(int fd, unsigned long request, char *argp)
             char *type = "UNKNOWN";
             switch (effect->type) {
                 case FF_RUMBLE:
-                    type = "FF_RUMBLE";
+                    type = "RUMBLE";
                     snprintf(effect_params, sizeof(effect_params),
                             "strong:%u, weak:%u",
                             effect->u.rumble.strong_magnitude,
                             effect->u.rumble.weak_magnitude);
                     break;
                 case FF_CONSTANT:
-                    type = "FF_CONSTANT";
+                    type = "CONSTANT";
                     snprintf(effect_params, sizeof(effect_params),
-                            "level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                            "level:%d attack_length:%u attack_level:%u "
+                            "fade_length:%u fade_level:%u",
                             effect->u.constant.level,
                             effect->u.constant.envelope.attack_length,
                             effect->u.constant.envelope.attack_level,
                             effect->u.constant.envelope.fade_length,
                             effect->u.constant.envelope.fade_level);
-
                     break;
                 case FF_RAMP:
-                    type = "FF_RAMP";
-                    snprintf(effect_params, sizeof(effect_params), "start_level:%d, end_level:%d, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                    type = "RAMP";
+                    snprintf(effect_params, sizeof(effect_params),
+                            "start_level:%d end_level:%d attack_length:%u "
+                            "attack_level:%u fade_length:%u fade_level:%u",
                             effect->u.ramp.start_level,
                             effect->u.ramp.end_level,
                             effect->u.ramp.envelope.attack_length,
@@ -221,7 +223,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                             effect->u.ramp.envelope.fade_level);
                     break;
                 case FF_PERIODIC:
-                    type = "FF_PERIODIC";
+                    type = "PERIODIC";
                     switch (effect->u.periodic.waveform) {
                         case FF_SQUARE:
                             waveform = "SQUARE";
@@ -243,7 +245,9 @@ int ioctl(int fd, unsigned long request, char *argp)
                             break;
                     }
                     snprintf(effect_params, sizeof(effect_params),
-                            "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                            "waveform:%s period:%u magnitude:%d offset:%d "
+                            "phase:%u attack_length:%u attack_level:%u "
+                            "fade_length:%u fade_level:%u",
                             waveform, effect->u.periodic.period,
                             effect->u.periodic.magnitude,
                             effect->u.periodic.offset,
@@ -254,55 +258,52 @@ int ioctl(int fd, unsigned long request, char *argp)
                             effect->u.periodic.envelope.fade_level);
                     break;
                 case FF_SPRING:
-                    type = "FF_SPRING";
+                    type = "SPRING";
                     break;
                 case FF_FRICTION:
-                    type = "FF_FRICTION";
+                    type = "FRICTION";
                     break;
                 case FF_DAMPER:
-                    type = "FF_DAMPER";
+                    type = "DAMPER";
                     break;
                 case FF_INERTIA:
-                    type = "FF_INERTIA";
+                    type = "INERTIA";
                     break;
             }
 
             if (effect->type == FF_SPRING || effect->type == FF_FRICTION || effect->type == FF_DAMPER || effect->type == FF_INERTIA) {
                 snprintf(effect_params, sizeof(effect_params),
-                        "X(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d); Y(right_saturation:%u, left_saturation:%u, right_coeff:%d, left_coeff:%d, deadband:%u, center:%d)",
+                        "right_saturation:%u left_saturation:%u right_coeff:%d "
+                        "left_coeff:%d deadband:%u center:%d",
                         effect->u.condition[0].right_saturation,
                         effect->u.condition[0].left_saturation,
                         effect->u.condition[0].right_coeff,
                         effect->u.condition[0].left_coeff,
                         effect->u.condition[0].deadband,
-                        effect->u.condition[0].center,
-                        effect->u.condition[1].right_saturation,
-                        effect->u.condition[1].left_saturation,
-                        effect->u.condition[1].right_coeff,
-                        effect->u.condition[1].left_coeff,
-                        effect->u.condition[1].deadband,
-                        effect->u.condition[1].center);
+                        effect->u.condition[0].center);
             }
 
-            int direction = (long) effect->direction * 360 / 65536;
+            int modified = enable_direction_fix | enable_force_inversion;
 
-            snprintf(string, sizeof(string),
-                    "trigger(button:%d, interval:%d), replay(length:%d, delay:%d)",
-                    effect->trigger.button, effect->trigger.interval,
-                    effect->replay.length, effect->replay.delay);
-
-            report("> IOCTL: Upload effect to device. id: %d dir: %d (%d) type: %s, %s, params: { %s }", effect->id, effect->direction, direction, type, string, effect_params);
+            report("%s> UPLOAD id:%d dir:%d replay:%d delay:%d type:%s %s",
+                    modified ? "#" : "", effect->id,
+                    effect->direction, effect->replay.length,
+                    effect->replay.delay, type, effect_params);
 
             if (enable_direction_fix && (effect->direction == 0 || effect->direction == 0x8000)) {
                 effect->direction -= 0x4000;
-                direction = (long) effect->direction * 360 / 65536;
-                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (direction_fix)", effect->id, effect->direction, direction, type, string, effect_params);
+                report("> UPLOAD id:%d dir:%d type:%s replay:%d delay:%d %s "
+                        "# direction fix", effect->id, effect->direction, type,
+                        effect->replay.length, effect->replay.delay,
+                        effect_params);
             }
 
             if (enable_force_inversion) {
                 effect->direction -= 0x8000;
-                direction = (long) effect->direction * 360 / 65536;
-                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (force inversion)", effect->id, effect->direction, direction, type, string, effect_params);
+                report("> UPLOAD id:%d dir:%d type:%s replay:%d delay:%d %s "
+                        "# force inversion fix", effect->id, effect->direction,
+                        type, effect->replay.length, effect->replay.delay,
+                        effect_params);
             }
 
             if (effect->type == FF_PERIODIC && enable_offset_fix) {
@@ -318,7 +319,10 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect->u.periodic.envelope.attack_level,
                         effect->u.periodic.envelope.fade_length,
                         effect->u.periodic.envelope.fade_level);
-                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (offset fix)", effect->id, effect->direction, direction, type, string, effect_params);
+                report("%s> UPLOAD id:%d dir:%d replay:%d delay:%d type:%s %s",
+                        modified ? "#" : "", effect->id,
+                        effect->direction, effect->replay.length,
+                        effect->replay.delay, type, effect_params);
             }
             break;
     }
@@ -351,10 +355,14 @@ int ioctl(int fd, unsigned long request, char *argp)
                     if (testBit(FF_GAIN, argp)) strcat(string, " Gain");
                     if (testBit(FF_AUTOCENTER, argp)) strcat(string, " Autocenter");
                     if (passes) {
-                        report("< %d, %s (features hack)", result, string);
+                        report("< %d, %s # features hack", result, string);
                         break;
                     } else {
-                        report("< %d, %s", result, string);
+                        if (enable_features_hack) {
+                            report("#< %d, %s", result, string);
+                        } else {
+                            report("< %d, %s", result, string);
+                        }
                     }
                     if (enable_features_hack) {
                         memset(argp, 255, _IOC_SIZE(request));
@@ -364,31 +372,40 @@ int ioctl(int fd, unsigned long request, char *argp)
             }
             break;
         case ioctlRequestCode(EVIOCRMFF):
-            report("< %d", result);
+            if (enable_features_hack) {
+                report("#< %d", result);
+            } else {
+                report("< %d", result);
+            }
             if (enable_features_hack && result != 0) {
                 result = 0;
-                report("< %d (features hack)", result);
+                report("< %d # features hack", result);
             }
             break;
         case ioctlRequestCode(EVIOCGEFFECTS):
-            report("< %d, effects: %d", result, *((int*)argp));
+            if (enable_features_hack) {
+                report("#< %d, effects: %d", result, *((int*)argp));
+            } else {
+                report("< %d, effects: %d", result, *((int*)argp));
+            }
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
-            report("< %d, id: %d", result, effect->id);
 
             if (enable_update_fix && result < 0 && errno == EINVAL && effect->id >= 0) {
+                report("#< %d, id: %d", result, effect->id);
                 effect->id = -1;
                 result = _ioctl(fd, request, argp);
-                report("< %d, id: %d (update_fix)", result, effect->id);
-            }
-
-            if (enable_features_hack && result != 0) {
+                report("< %d, id: %d # update fix", result, effect->id);
+            } else if (enable_features_hack && result != 0) {
+                report("#< %d, id: %d", result, effect->id);
                 if (effect->id == -1) {
                     effect->id = last_effect_used++;
                 }
                 result = 0;
-                report("< %d, id: %d (features hack)", result, effect->id);
+                report("< %d, id: %d # features hack", result, effect->id);
+            } else {
+                report("< %d, id: %d", result, effect->id);
             }
             break;
     }
@@ -415,19 +432,19 @@ ssize_t write(int fd, const void *buf, size_t num)
     switch (event->code) {
         case FF_GAIN:
             if (ignore_set_gain) {
-                report("> WRITE: Set FF gain (%d). (ignored)", event->value);
+                report("#> GAIN %d (ignored)", event->value);
             } else {
-                report("> WRITE: Set FF gain (%d).", event->value);
+                report("> GAIN %d", event->value);
             }
             break;
         case FF_AUTOCENTER:
-            report("> WRITE: Set autocenter strength (%d).", event->value);
+            report("> AUTOCENTER %d", event->value);
             break;
         default:
             if (event->value) {
-                report("> WRITE: Play effect (Id: %u,  %d)", event->code, event->value);
+                report("> PLAY %u %d", event->code, event->value);
             } else {
-                report("> WRITE: Stop effect (Id: %u,  %d)", event->code, event->value);
+                report("> STOP %u", event->code);
             }
             break;
     }
@@ -442,7 +459,7 @@ ssize_t write(int fd, const void *buf, size_t num)
 
     if (enable_features_hack && result != 0 && event->code < FF_MAX_EFFECTS) {
         result = 0;
-        report("< %d (features hack)", result);
+        report("< %d # features hack", result);
     }
 
     return result;
