@@ -55,6 +55,7 @@ static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
+static int enable_offset_fix = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
@@ -130,9 +131,18 @@ static void init()
         ignore_set_gain = 1;
     }
 
+    const char *str_offset_fix = getenv("FFBTOOLS_OFFSET_FIX");
+    if (str_offset_fix != NULL && strcmp(str_offset_fix, "1") == 0) {
+        enable_offset_fix = 1;
+    }
+
     if (enable_logger && ftell(log_file) == 0) {
-        report("%s, ENABLE_UPDATE_FIX=%d, ENABLE_DIRECTION_FIX=%d, ENABLE_FEATURES_HACK=%d, ENABLE_FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d",
-                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix, enable_direction_fix, enable_features_hack, enable_force_inversion, ignore_set_gain);
+        report("# DEVICE_NAME=%s, UPDATE_FIX=%d,"
+                "DIRECTION_FIX=%d, FEATURES_HACK=%d,"
+                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d",
+                getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
+                enable_direction_fix, enable_features_hack,
+                enable_force_inversion, ignore_set_gain, enable_offset_fix);
     }
 }
 
@@ -157,6 +167,7 @@ int ioctl(int fd, unsigned long request, char *argp)
     static char string[256];
     static char effect_params[256];
     struct ff_effect *effect = NULL;
+    char *waveform = "UNKNOWN";
 
     if (!_ioctl) {
         _ioctl = dlsym(RTLD_NEXT, "ioctl");
@@ -211,7 +222,6 @@ int ioctl(int fd, unsigned long request, char *argp)
                     break;
                 case FF_PERIODIC:
                     type = "FF_PERIODIC";
-                    char *waveform = "UNKNOWN";
                     switch (effect->u.periodic.waveform) {
                         case FF_SQUARE:
                             waveform = "SQUARE";
@@ -295,6 +305,21 @@ int ioctl(int fd, unsigned long request, char *argp)
                 report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (force inversion)", effect->id, effect->direction, direction, type, string, effect_params);
             }
 
+            if (effect->type == FF_PERIODIC && enable_offset_fix) {
+                effect->u.periodic.offset = (int)effect->u.periodic.offset * 0x7fff / 10000;
+                effect->u.periodic.phase = (int)effect->u.periodic.phase * 0xffff / 35999;
+                snprintf(effect_params, sizeof(effect_params),
+                        "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                        waveform, effect->u.periodic.period,
+                        effect->u.periodic.magnitude,
+                        effect->u.periodic.offset,
+                        effect->u.periodic.phase,
+                        effect->u.periodic.envelope.attack_length,
+                        effect->u.periodic.envelope.attack_level,
+                        effect->u.periodic.envelope.fade_length,
+                        effect->u.periodic.envelope.fade_level);
+                report("> IOCTL: Upload effect to device id: %d dir: %d (%d) type: %s, %s, params: { %s } (offset fix)", effect->id, effect->direction, direction, type, string, effect_params);
+            }
             break;
     }
 

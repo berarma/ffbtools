@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack,force-inversion,ignore-set-gain' -n "$0" -- "" "$@")
+OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack,force-inversion,ignore-set-gain,offset-fix' -n "$0" -- "" "$@")
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -73,6 +73,11 @@ while true; do
             shift
             continue
             ;;
+        '--offset-fix')
+            FFBTOOLS_OFFSET_FIX=1
+            shift
+            continue
+            ;;
         '--')
             shift
             break
@@ -93,12 +98,12 @@ COMMAND="$1"
 shift
 
 if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
-    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] [--force-inversion] <device> -- <command>"
+    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] [--force-inversion] [--ignore-set-gain] [--offset-fix] <device> -- <command>"
     exit 1
 fi
 
 FFBTOOLS_DEVICE_NAME="$(eval $(udevadm info -q property -x "${DEVICE_FILE}") && echo "${ID_VENDOR} ${ID_MODEL//_/ }")"
 
-export LD_PRELOAD FFBTOOLS_DEVICE_NAME FFBTOOLS_DEV_MAJOR FFBTOOLS_DEV_MINOR FFBTOOLS_LOGGER FFBTOOLS_LOG_FILE FFBTOOLS_UPDATE_FIX FFBTOOLS_DIRECTION_FIX FFBTOOLS_FEATURES_HACK FFBTOOLS_FORCE_INVERSION FFBTOOLS_IGNORE_SET_GAIN
+export LD_PRELOAD FFBTOOLS_DEVICE_NAME FFBTOOLS_DEV_MAJOR FFBTOOLS_DEV_MINOR FFBTOOLS_LOGGER FFBTOOLS_LOG_FILE FFBTOOLS_UPDATE_FIX FFBTOOLS_DIRECTION_FIX FFBTOOLS_FEATURES_HACK FFBTOOLS_FORCE_INVERSION FFBTOOLS_IGNORE_SET_GAIN FFBTOOLS_OFFSET_FIX
 
 "${COMMAND}" "$@"

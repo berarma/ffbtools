@@ -31,6 +31,11 @@ One or more of the following options can be used:
   `--force-inversion`: Invert the force feedback forces. It can be used
   together with `--direction-fix`.
 
+  `--ignore-set-gain`: Ignore any attempt to change the global FF gain.
+
+  `--offset-fix`: Proton sets `offset` and `phase` to incorrect values. This
+  option fixes it.
+
 ## Examples
 
 Log calls to a file:
