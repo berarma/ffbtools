@@ -257,7 +257,7 @@ void menu_effect_parameters(struct ff_effect *effect)
 
         switch (option) {
             case 'a':
-                effect->id = read_int("New id:");
+                effect->id = read_int("New id");
                 break;
             case 'b':
                 effect->direction = read_int("New direction");
