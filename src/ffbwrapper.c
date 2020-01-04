@@ -3,7 +3,7 @@
  * libffbdebug.c
  *
  * Logs IOCTL and write calls to the FFB subsystem
- * 
+ *
  * Copyright 2019 Bernat Arlandis <bernat@hotmail.com>
  */
 
@@ -285,14 +285,14 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             int modified = enable_direction_fix | enable_force_inversion;
 
-            report("%s> UPLOAD id:%d dir:%d replay:%d delay:%d type:%s %s",
+            report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s",
                     modified ? "#" : "", effect->id,
                     effect->direction, effect->replay.length,
                     effect->replay.delay, type, effect_params);
 
             if (enable_direction_fix && (effect->direction == 0 || effect->direction == 0x8000)) {
                 effect->direction -= 0x4000;
-                report("> UPLOAD id:%d dir:%d type:%s replay:%d delay:%d %s "
+                report("> UPLOAD id:%d dir:%d type:%s length:%d delay:%d %s "
                         "# direction fix", effect->id, effect->direction, type,
                         effect->replay.length, effect->replay.delay,
                         effect_params);
@@ -300,7 +300,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             if (enable_force_inversion) {
                 effect->direction -= 0x8000;
-                report("> UPLOAD id:%d dir:%d type:%s replay:%d delay:%d %s "
+                report("> UPLOAD id:%d dir:%d type:%s length:%d delay:%d %s "
                         "# force inversion fix", effect->id, effect->direction,
                         type, effect->replay.length, effect->replay.delay,
                         effect_params);
@@ -319,7 +319,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect->u.periodic.envelope.attack_level,
                         effect->u.periodic.envelope.fade_length,
                         effect->u.periodic.envelope.fade_level);
-                report("%s> UPLOAD id:%d dir:%d replay:%d delay:%d type:%s %s",
+                report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s",
                         modified ? "#" : "", effect->id,
                         effect->direction, effect->replay.length,
                         effect->replay.delay, type, effect_params);
@@ -393,19 +393,19 @@ int ioctl(int fd, unsigned long request, char *argp)
             effect = (struct ff_effect*) argp;
 
             if (enable_update_fix && result < 0 && errno == EINVAL && effect->id >= 0) {
-                report("#< %d, id: %d", result, effect->id);
+                report("#< %d id:%d", result, effect->id);
                 effect->id = -1;
                 result = _ioctl(fd, request, argp);
-                report("< %d, id: %d # update fix", result, effect->id);
+                report("< %d id:%d # update fix", result, effect->id);
             } else if (enable_features_hack && result != 0) {
-                report("#< %d, id: %d", result, effect->id);
+                report("#< %d id:%d", result, effect->id);
                 if (effect->id == -1) {
                     effect->id = last_effect_used++;
                 }
                 result = 0;
-                report("< %d, id: %d # features hack", result, effect->id);
+                report("< %d id:%d # features hack", result, effect->id);
             } else {
-                report("< %d, id: %d", result, effect->id);
+                report("< %d id:%d", result, effect->id);
             }
             break;
     }
