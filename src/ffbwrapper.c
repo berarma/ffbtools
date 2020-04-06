@@ -170,7 +170,9 @@ static int checkDescriptor(int fd)
     return 0;
 }
 
+#ifndef DEFAULT_EFFECT_HISTORY_SIZE
 #define DEFAULT_EFFECT_HISTORY_SIZE (512)
+#endif /* !defined(DEFAULT_EFFECT_HISTORY_SIZE */
 static struct ff_effect *effects_history = NULL;
 static size_t effects_history_len = 0;
 
