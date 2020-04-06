@@ -36,6 +36,8 @@ One or more of the following options can be used:
   `--offset-fix`: Proton sets `offset` and `phase` to incorrect values. This
   option fixes it.
 
+  `--spam-protection`: Ignore any uploads that push the same parameters repeatedly to the same effect ID. Use this if you see kernel logs messages indicating that the force feedback queue is piling up.
+
 ## Examples
 
 Log calls to a file:
