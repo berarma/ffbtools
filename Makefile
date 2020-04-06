@@ -29,6 +29,10 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wall
 LDLIBS ?= -lm
+LDFLAGS += -fPIC
+ifeq ($(FFBTOOLS_EFFECT_HISTORY_EXPONENTIAL_GROWTH),yes)
+	CFLAGS += -DFFBTOOLS_EFFECT_HISTORY_EXPONENTIAL_GROWTH
+endif
 
 all: $(BUILD_DIR) \
 	$(BUILD_DIR)/libffbwrapper-i386.so \
@@ -39,10 +43,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -ldl
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -m32 -shared $< -o $@ -ldl
 
 $(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -shared $< -o $@ -ldl
 
 $(BUILD_DIR)/ffbplay: $(BUILD_DIR)/ffbplay.o
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)

@@ -180,15 +180,27 @@ static inline void init_effects_history(unsigned int count)
         count = DEFAULT_EFFECT_HISTORY_SIZE;
     }
     if (count > effects_history_len || effects_history == NULL) {
-        struct ff_effect *new_effects_history = calloc(count, sizeof(struct ff_effect));
-        memset(new_effects_history, 0, count * sizeof(struct ff_effect));
-        if (effects_history != NULL) {
-            memcpy(new_effects_history, effects_history, count * effects_history_len);
-            free(effects_history);
-            effects_history = NULL;
+#ifdef FFBTOOLS_EFFECT_HISTORY_EXPONENTIAL_GROWTH
+        size_t new_effects_history_len = effects_history_len;
+        if (new_effects_history_len == 0) {
+            new_effects_history_len = DEFAULT_EFFECT_HISTORY_SIZE;
         }
-        effects_history = new_effects_history;
-        effects_history_len = count;
+        while (count > new_effects_history_len) {
+            new_effects_history_len *= 2;
+        }
+        count = (unsigned int)new_effects_history_len;
+#endif /* defined(FFBTOOLS_EFFECT_HISTORY_EXPONENTIAL_GROWTH */
+        if (effects_history != NULL) {
+            effects_history = reallocarray(effects_history, sizeof(struct ff_effect), count);
+            effects_history_len = count;
+        } else {
+            struct ff_effect *new_effects_history = calloc(count, sizeof(struct ff_effect));
+            memset(new_effects_history, 0, count * sizeof(struct ff_effect));
+            if (new_effects_history != NULL) {
+                effects_history = new_effects_history;
+                effects_history_len = count;
+            }
+        }
     }
 }
 
