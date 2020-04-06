@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
@@ -54,6 +55,7 @@ static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
 static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
+static bool enable_spam_protection = false;
 static int ignore_set_gain = 0;
 static int enable_offset_fix = 0;
 static FILE *log_file = NULL;
@@ -111,6 +113,11 @@ static void init()
         enable_update_fix = 1;
     }
 
+    const char *str_spam_protection = getenv("FFBTOOLS_SPAM_PROTECTION");
+    if (str_spam_protection != NULL && strcmp(str_spam_protection, "1") == 0) {
+        enable_spam_protection = true;
+    }
+
     const char *str_direction_fix = getenv("FFBTOOLS_DIRECTION_FIX");
     if (str_direction_fix != NULL && strcmp(str_direction_fix, "1") == 0) {
         enable_direction_fix = 1;
@@ -139,10 +146,12 @@ static void init()
     if (enable_logger && ftell(log_file) == 0) {
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d,"
                 "DIRECTION_FIX=%d, FEATURES_HACK=%d,"
-                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d",
+                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d"
+                "SPAM_PROTECTION=%d",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_features_hack,
-                enable_force_inversion, ignore_set_gain, enable_offset_fix);
+                enable_force_inversion, ignore_set_gain, enable_offset_fix,
+                enable_spam_protection);
     }
 }
 
@@ -161,6 +170,85 @@ static int checkDescriptor(int fd)
     return 0;
 }
 
+#define DEFAULT_EFFECT_HISTORY_SIZE (512)
+static struct ff_effect *effects_history = NULL;
+static size_t effects_history_len = 0;
+
+static inline void init_effects_history(unsigned int count)
+{
+    if (count <= 0) {
+        count = DEFAULT_EFFECT_HISTORY_SIZE;
+    }
+    if (count > effects_history_len || effects_history == NULL) {
+        struct ff_effect *new_effects_history = calloc(count, sizeof(struct ff_effect));
+        memset(new_effects_history, 0, count * sizeof(struct ff_effect));
+        if (effects_history != NULL) {
+            memcpy(new_effects_history, effects_history, count * effects_history_len);
+            free(effects_history);
+            effects_history = NULL;
+        }
+        effects_history = new_effects_history;
+        effects_history_len = count;
+    }
+}
+
+static bool cmp_effect(struct ff_effect *fst, struct ff_effect *snd)
+{
+    if (fst == NULL || snd == NULL) {
+        return true;
+    }
+    if (fst->id != snd->id) {
+        return true;
+    }
+    if (fst->direction != snd->direction) {
+        return true;
+    }
+    if (fst->type != snd->type) {
+        return true;
+    }
+    if (memcmp(&fst->trigger, &snd->trigger, sizeof(struct ff_trigger)) != 0) {
+        return true;
+    }
+    if (memcmp(&fst->replay, &snd->replay, sizeof(struct ff_replay)) != 0) {
+        return true;
+    }
+    switch (fst->type) {
+        case FF_RUMBLE:
+            if (memcmp(&fst->u.rumble, &snd->u.rumble, sizeof(struct ff_rumble_effect)) != 0) {
+                return true;
+            }
+            break;
+        case FF_CONSTANT:
+            if (memcmp(&fst->u.constant, &snd->u.constant, sizeof(struct ff_constant_effect)) != 0) {
+                return true;
+            }
+            break;
+        case FF_RAMP:
+            if (memcmp(&fst->u.ramp, &snd->u.ramp, sizeof(struct ff_ramp_effect)) != 0) {
+                return true;
+            }
+            break;
+        case FF_PERIODIC:
+            if (memcmp(&fst->u.periodic, &snd->u.periodic, sizeof(struct ff_periodic_effect)) != 0) {
+                return true;
+            }
+            break;
+        case FF_SPRING:
+        case FF_FRICTION:
+        case FF_DAMPER:
+        case FF_INERTIA:
+            for (size_t i = 0; i < 2; i++) {
+                if (memcmp(&fst->u.condition[i], &snd->u.condition[i], sizeof(struct ff_condition_effect)) != 0) {
+                    return true;
+                }
+            }
+            break;
+        default:
+            return true;
+    }
+    return false;
+}
+
 int ioctl(int fd, unsigned long request, char *argp)
 {
     static int (*_ioctl)(int fd, unsigned long request, char *argp) = NULL;
@@ -168,6 +256,8 @@ int ioctl(int fd, unsigned long request, char *argp)
     static char effect_params[256];
     struct ff_effect *effect = NULL;
     char *waveform = "UNKNOWN";
+    bool spam_protection = false;
+    int effectId = 0;
 
     if (!_ioctl) {
         _ioctl = dlsym(RTLD_NEXT, "ioctl");
@@ -177,6 +267,8 @@ int ioctl(int fd, unsigned long request, char *argp)
         return _ioctl(fd, request, argp);
     }
 
+    init_effects_history(0);
+
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
             report("> QUERY # Query force feedback features.");
@@ -185,10 +277,18 @@ int ioctl(int fd, unsigned long request, char *argp)
             report("> SLOTS # Get maximum number of simultaneous effects in memory.");
             break;
         case ioctlRequestCode(EVIOCRMFF):
-            report("> REMOVE %d # Remove effect from memory.", (int)((intptr_t)argp));
+            effectId = (int)((intptr_t)argp);
+            report("> REMOVE %d # Remove effect from memory.", effectId);
+            if (effectId < effects_history_len && effects_history != NULL) {
+                memset(&effects_history[effectId], 0, sizeof(struct ff_effect));
+            }
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
+
+            if (effect->id >= 0) {
+                init_effects_history((unsigned int)(effect->id + 1));
+            }
 
             char *type = "UNKNOWN";
             switch (effect->type) {
@@ -324,10 +424,22 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect->direction, effect->replay.length,
                         effect->replay.delay, type, effect_params);
             }
+
+            if (enable_spam_protection && effects_history != NULL && effect->id >= 0 && !cmp_effect(&effects_history[effect->id], effect)) {
+                spam_protection = true;
+            } else {
+                effects_history[effect->id] = *effect;
+            }
             break;
     }
 
-    int result = _ioctl(fd, request, argp);
+    int result = 0;
+    if (effect == NULL || !spam_protection) {
+        result = _ioctl(fd, request, argp);
+        report("result: %d", result);
+    } else {
+        report("> SPAM_PROTECTION on last request id:%d!", effect->id);
+    }
 
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
