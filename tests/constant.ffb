@@ -1,0 +1,12 @@
+00000000 # Slow movement left for 5s
+00000000 > UPLOAD id:-1 dir:16384 type:CONSTANT level:-9000
+00000000 < 0 id:0
+00000000 > PLAY 0 1
+05000000 # Slow movement right for 5s
+05000000 > UPLOAD id:0 dir:16384 type:CONSTANT level:9000
+10000000 # Fast movement left for 5s
+10000000 > UPLOAD id:0 dir:16384 type:CONSTANT level:-25000
+15000000 # Fast movement right for 5s
+15000000 > UPLOAD id:0 dir:16384 type:CONSTANT level:25000
+20000000 > STOP 0
+20000000 > REMOVE 0
