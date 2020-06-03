@@ -3,7 +3,7 @@
  * fftest.c
  *
  * Force feedback test command
- * 
+ *
  * Copyright 2019 Bernat Arlandis <bernat@hotmail.com>
  */
 
@@ -24,7 +24,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/input.h>
