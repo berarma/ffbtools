@@ -1,5 +1,9 @@
 # The Logitech FFB driver
 
+UPDATE: This document was written before starting work on
+[new-lg4ff](https://github.com/berarma/new-lg4ff) where some of the ideas here
+are implemented.
+
 First and foremost, we have to thank Simon Wood for the work done on this
 driver. His pioneer work has brought us where we are today and now we can talk
 about improving on his work.
@@ -52,7 +56,8 @@ it. This might be a bug in the driver or maybe a consequence of using
 `ff-memless`, we should figure out. [User jdinalt has
 posted](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-528539637)
 interesting information about the issue and even a patch for SDL that works
-around the problem.
+around the problem. (UPDATE: it was a [bug in the
+kernel](https://github.com/ValveSoftware/Proton/issues/2366#issuecomment-618727311))
 
 Related kernel files:
 

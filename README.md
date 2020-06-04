@@ -5,10 +5,8 @@ the FFB capabilities in GNU/Linux systems.
 
 The goal for this project is to raise awareness of issues in FFB, specially for
 steering wheels, help diagnose them and help more people get involved on fixing
-them and collaborate on related projects.
-
-See this project as a crutch until support and documentation for FFB
-gets in better shape in the future.
+them and collaborate on related projects. It can also be used as a learning
+tool.
 
 Please, read the complete documentation in the [docs](docs/README.md)
 directory.
