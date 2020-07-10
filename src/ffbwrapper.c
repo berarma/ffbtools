@@ -189,7 +189,7 @@ int ioctl(int fd, unsigned long request, char *argp)
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
-
+            effect->replay.length = 0x4e20;
             char *type = "UNKNOWN";
             switch (effect->type) {
                 case FF_RUMBLE:
