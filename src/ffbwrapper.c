@@ -189,7 +189,12 @@ int ioctl(int fd, unsigned long request, char *argp)
             break;
         case ioctlRequestCode(EVIOCSFF):
             effect = (struct ff_effect*) argp;
-            effect->replay.length = 0x4e20;
+
+            /* don't know if length of 0 is intentional or not, but I'll assume
+             * it wasn't. */
+            if(effect->replay.length == 0){
+                effect->replay.length = 0x4e20;
+            }
             char *type = "UNKNOWN";
             switch (effect->type) {
                 case FF_RUMBLE:
