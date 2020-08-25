@@ -1,6 +1,6 @@
 /*
  *
- * libffbdebug.c
+ * ffbwrapper.c
  *
  * Logs IOCTL and write calls to the FFB subsystem
  *
@@ -26,6 +26,8 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +48,9 @@
 #define report(...) snprintf(report_string, sizeof(report_string), __VA_ARGS__); output(report_string);
 
 static void init() __attribute__((constructor));
+static void close() __attribute__((destructor));
 
+static int (*_ioctl)(int fd, unsigned long request, char *argp);
 static int dev_major = 0;
 static int dev_minor = 0;
 static int enable_logger = 0;
@@ -56,9 +60,17 @@ static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
 static int enable_offset_fix = 0;
+static int enable_throttling = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
+static char effect_is_pending[64];
+static int pending_fd[64];
+static struct ff_effect pending_effects[64];
+static struct ff_effect tmp_effect;
+static pthread_spinlock_t pending_effects_lock;
+static timer_t throttle_timer_id;
+static struct sigevent throttle_sigev;
 
 static void output(char *message)
 {
@@ -83,8 +95,35 @@ static void output(char *message)
     fflush(log_file);
 }
 
+static void send_effect(int id)
+{
+    int fd;
+
+    pthread_spin_lock(&pending_effects_lock);
+    if (effect_is_pending[id]) {
+        effect_is_pending[id] = 0;
+        fd = pending_fd[id];
+        memcpy((char*) &tmp_effect, (char*) &pending_effects[id], sizeof(struct ff_effect));
+        pthread_spin_unlock(&pending_effects_lock);
+        _ioctl(fd, EVIOCSFF, (char*) &tmp_effect);
+    } else {
+        pthread_spin_unlock(&pending_effects_lock);
+    }
+}
+
+static void throttle_function(union sigval value)
+{
+    for (int id = 0; id < 64; id++) {
+        if (effect_is_pending[id]) {
+            send_effect(id);
+        }
+    }
+}
+
 static void init()
 {
+    _ioctl = dlsym(RTLD_NEXT, "ioctl");
+
     const char *str_dev_major = getenv("FFBTOOLS_DEV_MAJOR");
     const char *str_dev_minor = getenv("FFBTOOLS_DEV_MINOR");
 
@@ -136,13 +175,47 @@ static void init()
         enable_offset_fix = 1;
     }
 
+    const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
+    if (str_throttling != NULL && strcmp(str_throttling, "1") == 0) {
+        int result;
+        struct itimerspec timerspec;
+
+        enable_throttling = 1;
+        memset(effect_is_pending, 0, 64);
+        pthread_spin_init(&pending_effects_lock, PTHREAD_PROCESS_PRIVATE);
+
+        throttle_sigev.sigev_notify = SIGEV_THREAD;
+        throttle_sigev.sigev_notify_function = throttle_function;
+        result = timer_create(CLOCK_MONOTONIC, &throttle_sigev, &throttle_timer_id);
+        if (result != 0) {
+            fprintf(stderr, "Error setting the timer: %s\n", strerror(errno));
+            exit(-1);
+        }
+
+        timerspec.it_value.tv_sec = 0;
+        timerspec.it_value.tv_nsec = 3e6;
+        timerspec.it_interval.tv_sec = 0;
+        timerspec.it_interval.tv_nsec = 3e6;
+        timer_settime(throttle_timer_id, 0, &timerspec, NULL);
+    }
+
     if (enable_logger && ftell(log_file) == 0) {
-        report("# DEVICE_NAME=%s, UPDATE_FIX=%d,"
-                "DIRECTION_FIX=%d, FEATURES_HACK=%d,"
-                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d",
+        report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
+                "DIRECTION_FIX=%d, FEATURES_HACK=%d, "
+                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
+                "THROTTLING=%d",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_features_hack,
-                enable_force_inversion, ignore_set_gain, enable_offset_fix);
+                enable_force_inversion, ignore_set_gain, enable_offset_fix,
+                enable_throttling);
+    }
+}
+
+static void close()
+{
+    if (enable_throttling) {
+        timer_delete(throttle_timer_id);
+        pthread_spin_destroy(&pending_effects_lock);
     }
 }
 
@@ -163,15 +236,10 @@ static int checkDescriptor(int fd)
 
 int ioctl(int fd, unsigned long request, char *argp)
 {
-    static int (*_ioctl)(int fd, unsigned long request, char *argp) = NULL;
     static char string[256];
     static char effect_params[256];
     struct ff_effect *effect = NULL;
     char *waveform = "UNKNOWN";
-
-    if (!_ioctl) {
-        _ioctl = dlsym(RTLD_NEXT, "ioctl");
-    }
 
     if (!checkDescriptor(fd)) {
         return _ioctl(fd, request, argp);
@@ -324,6 +392,16 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect->direction, effect->replay.length,
                         effect->replay.delay, type, effect_params);
             }
+
+            if (enable_throttling && effect->id != -1) {
+                pthread_spin_lock(&pending_effects_lock);
+                memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
+                pending_fd[effect->id] = fd;
+                effect_is_pending[effect->id] = 1;
+                pthread_spin_unlock(&pending_effects_lock);
+                return 0;
+            }
+
             break;
     }
 
@@ -443,6 +521,9 @@ ssize_t write(int fd, const void *buf, size_t num)
         default:
             if (event->value) {
                 report("> PLAY %u %d", event->code, event->value);
+                if (enable_throttling) {
+                    send_effect(event->code);
+                }
             } else {
                 report("> STOP %u", event->code);
             }
