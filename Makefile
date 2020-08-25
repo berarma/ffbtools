@@ -1,6 +1,6 @@
 #
 # Makefile for ffbtools
-# 
+#
 # Copyright 2019 Bernat Arlandis <bernat@hotmail.com>
 #
 # This file is part of ffbtools.
@@ -39,10 +39,10 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -ldl
+	$(CC) $(CPPFLAGS) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -lrt -ldl
 
 $(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -ldl
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -lrt -ldl
 
 $(BUILD_DIR)/ffbplay: $(BUILD_DIR)/ffbplay.o
 	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
