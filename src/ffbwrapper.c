@@ -422,12 +422,16 @@ int ioctl(int fd, unsigned long request, char *argp)
             }
 
             if (enable_throttling && effect->id != -1) {
-                throttled = true;
-                pthread_spin_lock(&pending_effects_lock);
-                memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
-                pending_fd[effect->id] = fd;
-                effect_is_pending[effect->id] = 1;
-                pthread_spin_unlock(&pending_effects_lock);
+                if (effect->id > FFBTOOLS_MAX_EFFECT_ID) {
+                    report("! cannot throttle id:%d > %d", effect->id, FFBTOOLS_MAX_EFFECT_ID);
+                } else {
+                    throttled = true;
+                    pthread_spin_lock(&pending_effects_lock);
+                    memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
+                    pending_fd[effect->id] = fd;
+                    effect_is_pending[effect->id] = 1;
+                    pthread_spin_unlock(&pending_effects_lock);
+                }
             }
 
             break;
