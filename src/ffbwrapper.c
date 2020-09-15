@@ -69,7 +69,7 @@ static int enable_throttling = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
-static char effect_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {0};
+static bool effect_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
 static int pending_fd[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect pending_effects[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect tmp_effect;
@@ -106,7 +106,7 @@ static void send_effect(int id)
 
     pthread_spin_lock(&pending_effects_lock);
     if (effect_is_pending[id]) {
-        effect_is_pending[id] = 0;
+        effect_is_pending[id] = false;
         fd = pending_fd[id];
         memcpy((char*) &tmp_effect, (char*) &pending_effects[id], sizeof(struct ff_effect));
         pthread_spin_unlock(&pending_effects_lock);
@@ -429,7 +429,7 @@ int ioctl(int fd, unsigned long request, char *argp)
                     pthread_spin_lock(&pending_effects_lock);
                     memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
                     pending_fd[effect->id] = fd;
-                    effect_is_pending[effect->id] = 1;
+                    effect_is_pending[effect->id] = true;
                     pthread_spin_unlock(&pending_effects_lock);
                 }
             }
