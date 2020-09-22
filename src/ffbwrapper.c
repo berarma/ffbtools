@@ -125,19 +125,22 @@ static void throttle_function(union sigval value)
     }
 }
 
-static struct timespec default_timer_interval = {
-    .tv_sec = 0,
-    .tv_nsec = 3e6,
-};
+#define FFBTOOLS_DEFAULT_TIMER_INTERVAL (3e6)
 
 static void get_timer_interval(struct timespec *ret) {
-    *ret = default_timer_interval;
-    const char *str_interval = getenv("FFBTOOLS_THROTTLING_INTERVAL_MS");
+    *ret = (struct timespec){
+        .tv_sec = 0,
+        .tv_nsec = FFBTOOLS_DEFAULT_TIMER_INTERVAL
+    };
+    const char *str_interval = getenv("FFBTOOLS_THROTTLING");
     if (str_interval == NULL || strlen(str_interval) <= 0) {
         return;
     }
     int param = atol(str_interval);
-    if (param > 0) {
+    // If the user requests 1ms, they're just enabling the feature, so use the default.
+    // If you really need 1ms throttling, then just re-compile with the default changed.
+    // Since the other env vars have 1 = enable, this is the most sane behavior
+    if (param <= 1) {
         return;
     }
     ret->tv_nsec = param * 1e6;
@@ -199,7 +202,7 @@ static void init()
     }
 
     const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
-    if (str_throttling != NULL && strcmp(str_throttling, "1") == 0) {
+    if (str_throttling != NULL && strcmp(str_throttling, "0") != 0 && strcmp(str_throttling, "false") != 0) {
         int result;
         struct itimerspec timerspec;
 
@@ -218,7 +221,6 @@ static void init()
 
         get_timer_interval(&timerspec.it_interval);
         timerspec.it_value = timerspec.it_interval;
-        report("# FFBTOOLS_THROTTLING_INTERVAL_NS=%lu", timerspec.it_interval.tv_nsec);
         result = timer_settime(throttle_timer_id, 0, &timerspec, NULL);
         if (result != 0) {
             fprintf(stderr, "Error setting timer time: %d,%d: %s\n", result, errno, strerror(errno));
@@ -423,7 +425,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             if (enable_throttling && effect->id != -1) {
                 if (effect->id > FFBTOOLS_MAX_EFFECT_ID) {
-                    report("! cannot throttle id:%d > %d", effect->id, FFBTOOLS_MAX_EFFECT_ID);
+                    report("# cannot throttle id:%d > %d", effect->id, FFBTOOLS_MAX_EFFECT_ID);
                 } else {
                     throttled = true;
                     pthread_spin_lock(&pending_effects_lock);
