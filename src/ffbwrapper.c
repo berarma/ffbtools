@@ -230,11 +230,11 @@ static void init()
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
                 "DIRECTION_FIX=%d, FEATURES_HACK=%d, "
                 "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
-                "THROTTLING=%d",
+                "THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_features_hack,
                 enable_force_inversion, ignore_set_gain, enable_offset_fix,
-                enable_throttling);
+                str_throttling == NULL ? "0" : str_throttling);
     }
 }
 
