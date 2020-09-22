@@ -207,8 +207,6 @@ static void init()
         struct itimerspec timerspec;
 
         enable_throttling = 1;
-        // Not necessary because it'll be zeroed by compiler (.bss on x86{,_64})
-        // bzero(effect_is_pending, FFBTOOLS_THROTTLE_BUFFER_SIZE * sizeof(char));
         pthread_spin_init(&pending_effects_lock, PTHREAD_PROCESS_PRIVATE);
 
         throttle_sigev.sigev_notify = SIGEV_THREAD;
