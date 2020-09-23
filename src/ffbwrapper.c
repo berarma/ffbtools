@@ -31,7 +31,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -40,6 +42,9 @@
 #define ioctl ioctl_trash_function
 #include <linux/input.h>
 #undef ioctl
+
+#define FFBTOOLS_MAX_EFFECT_ID (63)
+#define FFBTOOLS_THROTTLE_BUFFER_SIZE (FFBTOOLS_MAX_EFFECT_ID + 1)
 
 #define ioctlRequestCode(request) (request & ((_IOC_DIRMASK << _IOC_DIRSHIFT) | (_IOC_TYPEMASK << _IOC_TYPESHIFT) | (_IOC_NRMASK << _IOC_NRSHIFT)))
 
@@ -64,9 +69,9 @@ static int enable_throttling = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
-static char effect_is_pending[64];
-static int pending_fd[64];
-static struct ff_effect pending_effects[64];
+static bool effect_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
+static int pending_fd[FFBTOOLS_THROTTLE_BUFFER_SIZE];
+static struct ff_effect pending_effects[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect tmp_effect;
 static pthread_spinlock_t pending_effects_lock;
 static timer_t throttle_timer_id;
@@ -101,7 +106,7 @@ static void send_effect(int id)
 
     pthread_spin_lock(&pending_effects_lock);
     if (effect_is_pending[id]) {
-        effect_is_pending[id] = 0;
+        effect_is_pending[id] = false;
         fd = pending_fd[id];
         memcpy((char*) &tmp_effect, (char*) &pending_effects[id], sizeof(struct ff_effect));
         pthread_spin_unlock(&pending_effects_lock);
@@ -113,11 +118,32 @@ static void send_effect(int id)
 
 static void throttle_function(union sigval value)
 {
-    for (int id = 0; id < 64; id++) {
+    for (int id = 0; id < FFBTOOLS_THROTTLE_BUFFER_SIZE; id++) {
         if (effect_is_pending[id]) {
             send_effect(id);
         }
     }
+}
+
+#define FFBTOOLS_DEFAULT_TIMER_INTERVAL (3e6)
+
+static void get_timer_interval(struct timespec *ret) {
+    *ret = (struct timespec){
+        .tv_sec = 0,
+        .tv_nsec = FFBTOOLS_DEFAULT_TIMER_INTERVAL
+    };
+    const char *str_interval = getenv("FFBTOOLS_THROTTLING");
+    if (str_interval == NULL || strlen(str_interval) <= 0) {
+        return;
+    }
+    int param = atol(str_interval);
+    // If the user requests 1ms, they're just enabling the feature, so use the default.
+    // If you really need 1ms throttling, then just re-compile with the default changed.
+    // Since the other env vars have 1 = enable, this is the most sane behavior
+    if (param <= 1) {
+        return;
+    }
+    ret->tv_nsec = param * 1e6;
 }
 
 static void init()
@@ -176,12 +202,11 @@ static void init()
     }
 
     const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
-    if (str_throttling != NULL && strcmp(str_throttling, "1") == 0) {
+    if (str_throttling != NULL && strcmp(str_throttling, "0") != 0 && strcmp(str_throttling, "false") != 0) {
         int result;
         struct itimerspec timerspec;
 
         enable_throttling = 1;
-        memset(effect_is_pending, 0, 64);
         pthread_spin_init(&pending_effects_lock, PTHREAD_PROCESS_PRIVATE);
 
         throttle_sigev.sigev_notify = SIGEV_THREAD;
@@ -192,22 +217,24 @@ static void init()
             exit(-1);
         }
 
-        timerspec.it_value.tv_sec = 0;
-        timerspec.it_value.tv_nsec = 3e6;
-        timerspec.it_interval.tv_sec = 0;
-        timerspec.it_interval.tv_nsec = 3e6;
-        timer_settime(throttle_timer_id, 0, &timerspec, NULL);
+        get_timer_interval(&timerspec.it_interval);
+        timerspec.it_value = timerspec.it_interval;
+        result = timer_settime(throttle_timer_id, 0, &timerspec, NULL);
+        if (result != 0) {
+            fprintf(stderr, "Error setting timer time: %d,%d: %s\n", result, errno, strerror(errno));
+            exit(-1);
+        }
     }
 
     if (enable_logger && ftell(log_file) == 0) {
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
                 "DIRECTION_FIX=%d, FEATURES_HACK=%d, "
                 "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
-                "THROTTLING=%d",
+                "THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_features_hack,
                 enable_force_inversion, ignore_set_gain, enable_offset_fix,
-                enable_throttling);
+                str_throttling == NULL ? "0" : str_throttling);
     }
 }
 
@@ -240,6 +267,7 @@ int ioctl(int fd, unsigned long request, char *argp)
     static char effect_params[256];
     struct ff_effect *effect = NULL;
     char *waveform = "UNKNOWN";
+    bool throttled = false;
 
     if (!checkDescriptor(fd)) {
         return _ioctl(fd, request, argp);
@@ -394,18 +422,27 @@ int ioctl(int fd, unsigned long request, char *argp)
             }
 
             if (enable_throttling && effect->id != -1) {
-                pthread_spin_lock(&pending_effects_lock);
-                memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
-                pending_fd[effect->id] = fd;
-                effect_is_pending[effect->id] = 1;
-                pthread_spin_unlock(&pending_effects_lock);
-                return 0;
+                if (effect->id > FFBTOOLS_MAX_EFFECT_ID) {
+                    report("# cannot throttle id:%d > %d", effect->id, FFBTOOLS_MAX_EFFECT_ID);
+                } else {
+                    throttled = true;
+                    pthread_spin_lock(&pending_effects_lock);
+                    memcpy((char*) &pending_effects[effect->id], (char*) effect, sizeof(struct ff_effect));
+                    pending_fd[effect->id] = fd;
+                    effect_is_pending[effect->id] = true;
+                    pthread_spin_unlock(&pending_effects_lock);
+                }
             }
 
             break;
     }
 
-    int result = _ioctl(fd, request, argp);
+    int result;
+    if (!throttled) {
+        result = _ioctl(fd, request, argp);
+    } else {
+        result = 0;
+    }
 
     switch (ioctlRequestCode(request)) {
         case ioctlRequestCode(EVIOCGBIT(EV_FF, 0)):
