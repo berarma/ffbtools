@@ -127,20 +127,17 @@ static void throttle_function(union sigval value)
 
 #define FFBTOOLS_DEFAULT_TIMER_INTERVAL (3e6)
 
-static void get_timer_interval(struct timespec *ret) {
+static void get_timer_interval(struct timespec *ret, const char *str_interval) {
+    // Use the default for invalid values
     *ret = (struct timespec){
         .tv_sec = 0,
         .tv_nsec = FFBTOOLS_DEFAULT_TIMER_INTERVAL
     };
-    const char *str_interval = getenv("FFBTOOLS_THROTTLING");
-    if (str_interval == NULL || strlen(str_interval) <= 0) {
+    if (strlen(str_interval) <= 0) {
         return;
     }
     int param = atol(str_interval);
-    // If the user requests 1ms, they're just enabling the feature, so use the default.
-    // If you really need 1ms throttling, then just re-compile with the default changed.
-    // Since the other env vars have 1 = enable, this is the most sane behavior
-    if (param <= 1) {
+    if (param < 1) {
         return;
     }
     ret->tv_nsec = param * 1e6;
@@ -202,7 +199,7 @@ static void init()
     }
 
     const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
-    if (str_throttling != NULL && strcmp(str_throttling, "0") != 0 && strcmp(str_throttling, "false") != 0) {
+    if (str_throttling != NULL && strcmp(str_throttling, "0") != 0) {
         int result;
         struct itimerspec timerspec;
 
@@ -217,7 +214,7 @@ static void init()
             exit(-1);
         }
 
-        get_timer_interval(&timerspec.it_interval);
+        get_timer_interval(&timerspec.it_interval, str_throttling);
         timerspec.it_value = timerspec.it_interval;
         result = timer_settime(throttle_timer_id, 0, &timerspec, NULL);
         if (result != 0) {

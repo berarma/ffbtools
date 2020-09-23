@@ -40,6 +40,10 @@ One or more of the following options can be used:
   sent to avoid filling the command queue of the device. It helps with issues
   like effect lag and "full queue" messages in the log.
 
+  `--throttling-time`: Changes the throttling timer period to some value in
+  milliseconds. The default value is 3ms. Only used when enabling the
+  throttling option.
+
 ## Examples
 
 Log calls to a file:

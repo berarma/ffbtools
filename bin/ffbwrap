@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack,force-inversion,ignore-set-gain,offset-fix,throttling' -n "$0" -- "" "$@")
+OPTIONS=$(getopt --long 'logger:,update-fix,direction-fix,features-hack,force-inversion,ignore-set-gain,offset-fix,throttling,throttling-time:' -n "$0" -- "" "$@")
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -39,6 +39,8 @@ else
 fi
 
 LD_PRELOAD="${LIBDIR}/libffbwrapper-x86_64.so ${LIBDIR}/libffbwrapper-i386.so ${LD_PRELOAD}"
+
+FFBTOOLS_THROTTLING_TIME=3
 
 while true; do
     case "$1" in
@@ -83,6 +85,11 @@ while true; do
             shift
             continue
             ;;
+        '--throttling-time')
+            FFBTOOLS_THROTTLING_TIME=$2
+            shift 2
+            continue
+            ;;
         '--')
             shift
             break
@@ -99,11 +106,15 @@ then
     shift
 fi
 
+if [ "FFBTOOLS_THROTTLING" = "1" ]; then
+    FFBTOOLS_THROTTLING=$FFBTOOLS_THROTTLING_TIME
+fi
+
 COMMAND="$1"
 shift
 
 if [ -z "${FFBTOOLS_DEV_MAJOR}" -o -z "${FFBTOOLS_DEV_MINOR}" -o -z "${COMMAND}" ]; then
-    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] [--force-inversion] [--ignore-set-gain] [--offset-fix] [--throttling] <device> -- <command>"
+    echo "Usage: $0 [--logger=logfile] [--update-fix] [--direction-fix] [--features-hack] [--force-inversion] [--ignore-set-gain] [--offset-fix] [--throttling] [--throttling-time=N] <device> -- <command>"
     exit 1
 fi
 
