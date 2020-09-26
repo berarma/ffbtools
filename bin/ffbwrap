@@ -106,7 +106,7 @@ then
     shift
 fi
 
-if [ "FFBTOOLS_THROTTLING" = "1" ]; then
+if [ "$FFBTOOLS_THROTTLING" = "1" ]; then
     FFBTOOLS_THROTTLING=$FFBTOOLS_THROTTLING_TIME
 fi
 
