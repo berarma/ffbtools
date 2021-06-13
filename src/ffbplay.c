@@ -662,7 +662,7 @@ void play_file(const char *file_name, int trace_mode)
 
     while (fgets(line, sizeof(line), file)) {
         if (trace_mode) {
-            printf(line);
+            printf("%s\n", line);
         }
         strtok(line, "\n");
         token = strtok_r(line, " ", &next_token);
