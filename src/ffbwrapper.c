@@ -56,8 +56,8 @@ static void init() __attribute__((constructor));
 static void close() __attribute__((destructor));
 
 static int (*_ioctl)(int fd, unsigned long request, char *argp);
-static int dev_major = 0;
-static int dev_minor = 0;
+static unsigned int dev_major = 0;
+static unsigned int dev_minor = 0;
 static int enable_logger = 0;
 static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
@@ -118,6 +118,8 @@ static void send_effect(int id)
 
 static void throttle_function(union sigval value)
 {
+    (void) value;
+
     for (int id = 0; id < FFBTOOLS_THROTTLE_BUFFER_SIZE; id++) {
         if (effect_is_pending[id]) {
             send_effect(id);

@@ -208,11 +208,13 @@ char read_option(const char *prompt, const char *options)
     printf("> %s: ", prompt);
 
     do {
-        fgets(input, sizeof(input), stdin);
+        if (!fgets(input, sizeof(input), stdin)) {
+            return '\n';
+        }
 
         if (strlen(input) <= 2) {
             option = input[0];
-            for (int i = 0; i < strlen(options); i++) {
+            for (size_t i = 0; i < strlen(options); i++) {
                 if (option == options[i]) {
                     return option;
                 }
@@ -227,7 +229,9 @@ int read_int(const char *prompt)
 
     printf("> %s: ", prompt);
 
-    fgets(input, sizeof(input), stdin);
+    if (!fgets(input, sizeof(input), stdin)) {
+        return 0;
+    }
 
     return strtol(input, NULL, 0);
 }
@@ -595,6 +599,7 @@ void new_effect(struct ff_effect *effect, char *params)
                         } else if (!strcmp(key, "center")) {
                             effect->u.condition[0].center = nvalue;
                         }
+                        // fall through
                     case FF_DAMPER:
                     case FF_FRICTION:
                     case FF_INERTIA:
@@ -638,13 +643,12 @@ void play_file(const char *file_name, int trace_mode)
     struct timespec now;
     struct timespec start_time;
     struct ff_effect effect;
-    int delta_time;
     char line[1024];
     char *token;
     char *next_token;
     char *prefix;
     char *op;
-    unsigned long time;
+    unsigned long time, delta_time;
     int first = 1;
     int id;
     int count;
