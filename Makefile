@@ -18,17 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-BUILD_DIR ?= ./build
-SRC_DIR ?= ./src
+BUILD_DIR ?= build
+SRC_DIR ?= src
 
 OBJS := $(shell find $(BUILD_DIR) -name *.o 2> /dev/null)
 DEPS := $(OBJS:.o=.d)
 
-INC_DIRS := $(shell find $(SRC_DIR) -type d)
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
-
-CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -Wall
-LDLIBS ?= -lm
+CFLAGS += -MMD -MP -Wall -Wextra
+LDLIBS += -lm
 
 all: $(BUILD_DIR) \
 	$(BUILD_DIR)/libffbwrapper-i386.so \
@@ -40,21 +37,17 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(BUILD_DIR)/libffbwrapper-i386.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -lrt -ldl
+	$(CC) $(CFLAGS) -m32 -fPIC -shared $< -o $@ -lrt -ldl
 
 $(BUILD_DIR)/libffbwrapper-x86_64.so: $(SRC_DIR)/ffbwrapper.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -shared $< -o $@ -lrt -ldl
+	$(CC) $(CFLAGS) -fPIC -shared $< -o $@ -lrt -ldl
 
-$(BUILD_DIR)/ffbplay: $(BUILD_DIR)/ffbplay.o
-	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
-
-$(BUILD_DIR)/rawcmd: $(BUILD_DIR)/rawcmd.o
-	$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
+$(BUILD_DIR)/%: $(BUILD_DIR)/%.o
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: directories clean
+.PHONY: clean
 
 clean:
 	$(RM) -r $(BUILD_DIR)
