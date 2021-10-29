@@ -42,7 +42,7 @@
 
 int device_handle;
 
-int set_gain(int gain)
+int ffbt_set_gain(int gain)
 {
     struct input_event event;
 
@@ -60,7 +60,7 @@ int set_gain(int gain)
     return 1;
 }
 
-int set_autocenter(int level)
+int ffbt_set_autocenter(int level)
 {
     struct input_event event;
 
@@ -78,7 +78,7 @@ int set_autocenter(int level)
     return 1;
 }
 
-int upload_effect(struct ff_effect *effect)
+int ffbt_upload_effect(struct ff_effect *effect)
 {
     /* Upload effect */
     if (ioctl(device_handle, EVIOCSFF, effect) < 0) {
@@ -90,7 +90,7 @@ int upload_effect(struct ff_effect *effect)
     return 1;
 }
 
-int play_effect(int id, int count)
+int ffbt_play_effect(int id, int count)
 {
     struct input_event event;
 
@@ -108,7 +108,7 @@ int play_effect(int id, int count)
     return 1;
 }
 
-int remove_effect(int id)
+int ffbt_remove_effect(int id)
 {
     if (ioctl(device_handle, EVIOCRMFF, id)<0) {
         fprintf(stderr, "ERROR: removing effect failed (%s) [%s:%d]\n",
@@ -119,7 +119,7 @@ int remove_effect(int id)
     return 1;
 }
 
-void init_effect(struct ff_effect *effect)
+void ffbt_init_effect(struct ff_effect *effect)
 {
     effect->id = -1;
     effect->trigger.button = 0;
@@ -171,9 +171,9 @@ void init_effect(struct ff_effect *effect)
     }
 }
 
-void simple_effect(struct ff_effect *effect)
+void ffbt_simple_effect(struct ff_effect *effect)
 {
-    init_effect(effect);
+    ffbt_init_effect(effect);
 
     switch (effect->type) {
         case FF_CONSTANT:
@@ -200,7 +200,7 @@ void simple_effect(struct ff_effect *effect)
     }
 }
 
-char read_option(const char *prompt, const char *options)
+char ffbt_read_option(const char *prompt, const char *options)
 {
     char input[50];
     char option;
@@ -223,7 +223,7 @@ char read_option(const char *prompt, const char *options)
     } while (true);
 }
 
-int read_int(const char *prompt)
+int ffbt_read_int(const char *prompt)
 {
     char input[50];
 
@@ -236,7 +236,7 @@ int read_int(const char *prompt)
     return strtol(input, NULL, 0);
 }
 
-void menu_effect_parameters(struct ff_effect *effect)
+void ffbt_menu_effect_parameters(struct ff_effect *effect)
 {
     struct ff_envelope *envelope = NULL;
     char option;
@@ -286,83 +286,83 @@ void menu_effect_parameters(struct ff_effect *effect)
             print_option('w', "Fade level: %u", envelope->fade_level);
         }
 
-        option = read_option("Change parameter", "abcdefghijklmnopqrstuvw\n");
+        option = ffbt_read_option("Change parameter", "abcdefghijklmnopqrstuvw\n");
 
         switch (option) {
             case 'a':
-                effect->id = read_int("New id");
+                effect->id = ffbt_read_int("New id");
                 break;
             case 'b':
-                effect->direction = read_int("New direction");
+                effect->direction = ffbt_read_int("New direction");
                 break;
             case 'c':
-                effect->replay.length = read_int("New replay length");
+                effect->replay.length = ffbt_read_int("New replay length");
                 break;
             case 'd':
-                effect->replay.delay = read_int("New replay delay");
+                effect->replay.delay = ffbt_read_int("New replay delay");
                 break;
             case 'e':
-                effect->u.constant.level = read_int("New level");
+                effect->u.constant.level = ffbt_read_int("New level");
                 break;
             case 'f':
-                effect->u.ramp.start_level = read_int("New start level");
+                effect->u.ramp.start_level = ffbt_read_int("New start level");
                 break;
             case 'g':
-                effect->u.ramp.end_level = read_int("New end level");
+                effect->u.ramp.end_level = ffbt_read_int("New end level");
                 break;
             case 'h':
-                effect->u.periodic.period = read_int("New period");
+                effect->u.periodic.period = ffbt_read_int("New period");
                 break;
             case 'i':
-                effect->u.periodic.magnitude = read_int("New magnitude");
+                effect->u.periodic.magnitude = ffbt_read_int("New magnitude");
                 break;
             case 'j':
-                effect->u.periodic.offset = read_int("New offset");
+                effect->u.periodic.offset = ffbt_read_int("New offset");
                 break;
             case 'k':
-                effect->u.periodic.phase = read_int("New phase");
+                effect->u.periodic.phase = ffbt_read_int("New phase");
                 break;
             case 'l':
-                effect->u.condition[0].right_saturation = read_int("New right saturation");
+                effect->u.condition[0].right_saturation = ffbt_read_int("New right saturation");
                 break;
             case 'm':
-                effect->u.condition[0].left_saturation = read_int("New left saturation");
+                effect->u.condition[0].left_saturation = ffbt_read_int("New left saturation");
                 break;
             case 'n':
-                effect->u.condition[0].right_coeff = read_int("New right coeff");
+                effect->u.condition[0].right_coeff = ffbt_read_int("New right coeff");
                 break;
             case 'o':
-                effect->u.condition[0].left_coeff = read_int("New left coeff");
+                effect->u.condition[0].left_coeff = ffbt_read_int("New left coeff");
                 break;
             case 'p':
-                effect->u.condition[0].deadband = read_int("New deadband");
+                effect->u.condition[0].deadband = ffbt_read_int("New deadband");
                 break;
             case 'q':
-                effect->u.condition[0].center = read_int("New center");
+                effect->u.condition[0].center = ffbt_read_int("New center");
                 break;
             case 'r':
-                effect->u.rumble.strong_magnitude = read_int("New strong magnitude");
+                effect->u.rumble.strong_magnitude = ffbt_read_int("New strong magnitude");
                 break;
             case 's':
-                effect->u.rumble.weak_magnitude = read_int("New weak magnitude");
+                effect->u.rumble.weak_magnitude = ffbt_read_int("New weak magnitude");
                 break;
             case 't':
-                envelope->attack_length = read_int("New attack length");
+                envelope->attack_length = ffbt_read_int("New attack length");
                 break;
             case 'u':
-                envelope->attack_level = read_int("New attack level");
+                envelope->attack_level = ffbt_read_int("New attack level");
                 break;
             case 'v':
-                envelope->fade_length = read_int("New attack length");
+                envelope->fade_length = ffbt_read_int("New attack length");
                 break;
             case 'w':
-                envelope->fade_level = read_int("New attack level");
+                envelope->fade_level = ffbt_read_int("New attack level");
                 break;
         }
     } while (option != '\n');
 }
 
-void menu_upload_effect()
+void ffbt_menu_upload_effect()
 {
     struct ff_effect effect;
     int option;
@@ -380,7 +380,7 @@ void menu_upload_effect()
     print_option('a', "Saw up");
     print_option('b', "Saw down");
     print_option('c', "Rumble");
-    option = read_option("Select effect type (0 to return)", "0123456789abc");
+    option = ffbt_read_option("Select effect type (1 to return)", "0123456789abc");
 
     switch (option) {
         case '1':
@@ -428,67 +428,67 @@ void menu_upload_effect()
             return;
     }
 
-    simple_effect(&effect);
+    ffbt_simple_effect(&effect);
 
-    menu_effect_parameters(&effect);
+    ffbt_menu_effect_parameters(&effect);
 
-    if (upload_effect(&effect)) {
+    if (ffbt_upload_effect(&effect)) {
         printf("* Uploaded effect with id: %d\n", effect.id);
     }
 }
 
-void menu_play_effect()
+void ffbt_menu_play_effect()
 {
     int id;
     int count;
 
-    id = read_int("Effect id");
-    count = read_int("Count");
+    id = ffbt_read_int("Effect id");
+    count = ffbt_read_int("Count");
 
     printf("Playing effect with id %d...\n", id);
-    play_effect(id, count);
+    ffbt_play_effect(id, count);
 }
 
-void menu_stop_effect()
+void ffbt_menu_stop_effect()
 {
     int id;
 
-    id = read_int("Effect id");
+    id = ffbt_read_int("Effect id");
 
     printf("Stopping effect with id %d...\n", id);
-    play_effect(id, 0);
+    ffbt_play_effect(id, 0);
 }
 
-void menu_remove_effect()
+void ffbt_menu_remove_effect()
 {
     int id;
 
-    id = read_int("Effect id");
+    id = ffbt_read_int("Effect id");
 
-    if (remove_effect(id)) {
+    if (ffbt_remove_effect(id)) {
         printf("Removed effect with id %d.\n", id);
     }
 }
 
-void menu_set_gain()
+void ffbt_menu_set_gain()
 {
     int gain;
 
-    gain = read_int("Gain");
+    gain = ffbt_read_int("Gain");
 
-    set_gain(gain);
+    ffbt_set_gain(gain);
 }
 
 void menu_set_autocenter()
 {
     int level;
 
-    level = read_int("Level");
+    level = ffbt_read_int("Level");
 
-    set_autocenter(level);
+    ffbt_set_autocenter(level);
 }
 
-void main_menu()
+void ffbt_main_menu()
 {
     char option;
 
@@ -500,23 +500,23 @@ void main_menu()
         print_option('4', "Remove effect");
         print_option('5', "Set gain");
         print_option('6', "Set autocenter");
-        option = read_option("Select command (q to exit)", "123456q");
+        option = ffbt_read_option("Select command (q to exit)", "123456q");
 
         switch (option) {
             case '1':
-                menu_upload_effect();
+                ffbt_menu_upload_effect();
                 break;
             case '2':
-                menu_play_effect();
+                ffbt_menu_play_effect();
                 break;
             case '3':
-                menu_stop_effect();
+                ffbt_menu_stop_effect();
                 break;
             case '4':
-                menu_remove_effect();
+                ffbt_menu_remove_effect();
                 break;
             case '5':
-                menu_set_gain();
+                ffbt_menu_set_gain();
                 break;
             case '6':
                 menu_set_autocenter();
@@ -525,7 +525,7 @@ void main_menu()
     } while (option != 'q');
 }
 
-void new_effect(struct ff_effect *effect, char *params)
+void ffbt_new_effect(struct ff_effect *effect, char *params)
 {
     char *next_param;
     char *param;
@@ -553,7 +553,7 @@ void new_effect(struct ff_effect *effect, char *params)
         effect->type = FF_RUMBLE;
     }
 
-    init_effect(effect);
+    ffbt_init_effect(effect);
 
     for(; (param = strtok_r(params, " ", &next_param)); params = NULL) {
         key = strtok_r(param, ":", &value);
@@ -637,7 +637,7 @@ void new_effect(struct ff_effect *effect, char *params)
     }
 }
 
-void play_file(const char *file_name, int trace_mode)
+void ffbt_play_file(const char *file_name, int trace_mode)
 {
     FILE *file = fopen(file_name, "r");
     struct timespec now;
@@ -711,32 +711,32 @@ void play_file(const char *file_name, int trace_mode)
             }
         }
         if (!strcmp(op, "GAIN")) {
-            set_gain(strtol(next_token, NULL, 0));
+            ffbt_set_gain(strtol(next_token, NULL, 0));
         } else if (!strcmp(op, "AUTOCENTER")) {
-            set_autocenter(strtol(next_token, NULL, 0));
+            ffbt_set_autocenter(strtol(next_token, NULL, 0));
         } else if (!strcmp(op, "UPLOAD")) {
-            new_effect(&effect, next_token);
+            ffbt_new_effect(&effect, next_token);
             if (effect.id == -1) {
-                upload_effect(&effect);
+                ffbt_upload_effect(&effect);
                 save_id = effect.id;
             } else if (ids[effect.id] != -1) {
                 effect.id = ids[effect.id];
-                upload_effect(&effect);
+                ffbt_upload_effect(&effect);
             }
         } else if (!strcmp(op, "PLAY")) {
             id = strtol(strtok_r(NULL, " ", &next_token), NULL, 0);
             count = strtol(strtok_r(NULL, " ", &next_token), NULL, 0);
             if (ids[id] != -1) {
-                play_effect(ids[id], count);
+                ffbt_play_effect(ids[id], count);
             }
         } else if (!strcmp(op, "STOP")) {
             id = strtol(strtok_r(NULL, " ", &next_token), NULL, 0);
             if (ids[id] != -1) {
-                play_effect(ids[id], 0);
+                ffbt_play_effect(ids[id], 0);
             }
         } else if (!strcmp(op, "REMOVE")) {
             id = strtol(strtok_r(NULL, " ", &next_token), NULL, 0);
-            remove_effect(id);
+            ffbt_remove_effect(id);
             ids[id] = -1;
         }
     }
@@ -810,12 +810,12 @@ int main(int argc, char * argv[])
 
     printf("CAUTION: The forces applied might be dangerous.\n\n");
 
-    set_gain(0xffff);
+    ffbt_set_gain(0xffff);
 
     if (interactive_mode) {
-        main_menu();
+        ffbt_main_menu();
     } else {
-        play_file(file_name, trace_mode);
+        ffbt_play_file(file_name, trace_mode);
     }
 
     close(device_handle);

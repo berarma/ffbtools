@@ -50,10 +50,10 @@
 
 #define testBit(bit, array) ((array[bit/8] >> bit%8) & 1)
 
-#define report(...) snprintf(report_string, sizeof(report_string), __VA_ARGS__); output(report_string);
+#define report(...) snprintf(report_string, sizeof(report_string), __VA_ARGS__); ffbt_output(report_string);
 
-static void init() __attribute__((constructor));
-static void close() __attribute__((destructor));
+static void ffbt_init() __attribute__((constructor));
+static void ffbt_close() __attribute__((destructor));
 
 static int (*_ioctl)(int fd, unsigned long request, char *argp);
 static unsigned int dev_major = 0;
@@ -77,7 +77,7 @@ static pthread_spinlock_t pending_effects_lock;
 static timer_t throttle_timer_id;
 static struct sigevent throttle_sigev;
 
-static void output(char *message)
+static void ffbt_output(char *message)
 {
     static struct timespec t0 = {0, 0};
     struct timespec now;
@@ -100,7 +100,7 @@ static void output(char *message)
     fflush(log_file);
 }
 
-static void send_effect(int id)
+static void ffbt_send_effect(int id)
 {
     int fd;
 
@@ -116,20 +116,20 @@ static void send_effect(int id)
     }
 }
 
-static void throttle_function(union sigval value)
+static void ffbt_throttle_function(union sigval value)
 {
     (void) value;
 
     for (int id = 0; id < FFBTOOLS_THROTTLE_BUFFER_SIZE; id++) {
         if (effect_is_pending[id]) {
-            send_effect(id);
+            ffbt_send_effect(id);
         }
     }
 }
 
 #define FFBTOOLS_DEFAULT_TIMER_INTERVAL (3e6)
 
-static void get_timer_interval(struct timespec *ret, const char *str_interval) {
+static void ffbt_get_timer_interval(struct timespec *ret, const char *str_interval) {
     // Use the default for invalid values
     *ret = (struct timespec){
         .tv_sec = 0,
@@ -145,7 +145,7 @@ static void get_timer_interval(struct timespec *ret, const char *str_interval) {
     ret->tv_nsec = param * 1e6;
 }
 
-static void init()
+static void ffbt_init()
 {
     _ioctl = dlsym(RTLD_NEXT, "ioctl");
 
@@ -209,14 +209,14 @@ static void init()
         pthread_spin_init(&pending_effects_lock, PTHREAD_PROCESS_PRIVATE);
 
         throttle_sigev.sigev_notify = SIGEV_THREAD;
-        throttle_sigev.sigev_notify_function = throttle_function;
+        throttle_sigev.sigev_notify_function = ffbt_throttle_function;
         result = timer_create(CLOCK_MONOTONIC, &throttle_sigev, &throttle_timer_id);
         if (result != 0) {
             fprintf(stderr, "Error setting the timer: %s\n", strerror(errno));
             exit(-1);
         }
 
-        get_timer_interval(&timerspec.it_interval, str_throttling);
+        ffbt_get_timer_interval(&timerspec.it_interval, str_throttling);
         timerspec.it_value = timerspec.it_interval;
         result = timer_settime(throttle_timer_id, 0, &timerspec, NULL);
         if (result != 0) {
@@ -237,7 +237,7 @@ static void init()
     }
 }
 
-static void close()
+static void ffbt_close()
 {
     if (enable_throttling) {
         timer_delete(throttle_timer_id);
@@ -245,7 +245,7 @@ static void close()
     }
 }
 
-static int checkDescriptor(int fd)
+static int ffbt_check_descriptor(int fd)
 {
     if (dev_major != 0 && dev_minor != 0) {
         struct stat sb;
@@ -268,7 +268,7 @@ int ioctl(int fd, unsigned long request, char *argp)
     char *waveform = "UNKNOWN";
     bool throttled = false;
 
-    if (!checkDescriptor(fd)) {
+    if (!ffbt_check_descriptor(fd)) {
         return _ioctl(fd, request, argp);
     }
 
@@ -539,7 +539,7 @@ ssize_t write(int fd, const void *buf, size_t num)
 
     event = (struct input_event*) buf;
 
-    if (!checkDescriptor(fd) || event->type != EV_FF) {
+    if (!ffbt_check_descriptor(fd) || event->type != EV_FF) {
         return _write(fd, buf, num);
     }
 
@@ -558,7 +558,7 @@ ssize_t write(int fd, const void *buf, size_t num)
             if (event->value) {
                 report("> PLAY %u %d", event->code, event->value);
                 if (enable_throttling) {
-                    send_effect(event->code);
+                    ffbt_send_effect(event->code);
                 }
             } else {
                 report("> STOP %u", event->code);
