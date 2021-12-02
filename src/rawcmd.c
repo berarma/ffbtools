@@ -36,34 +36,44 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <linux/hidraw.h>
 
-#define MAX_SIZE 16
+#define REPORT_SIZE 8
 
 int main(int argc, char *argv[])
 {
-    unsigned char report[MAX_SIZE] = {};
+    unsigned char report[REPORT_SIZE] = {0};
     char *device_name;
     static struct timespec t0;
     struct timespec t1;
     unsigned long reltime;
-    int nbytes;
     int res;
 
     if (argc < 3) {
-        printf("Usage: %s <raw device> <B0> [B1] [B2] [B3] [B4] [B5] [B6] ...\n", argv[0]);
+        printf("Usage: %s <raw device> [--id n] <B0> [B1] [B2] [B3] [B4] [B5] [B6] ...\n", argv[0]);
         printf("Example: %s /dev/hidraw8 0xF3\n", argv[0]);
         exit(1);
     }
 
     device_name = argv[1];
 
-    nbytes = argc - 2;
-    if (nbytes > MAX_SIZE) {
-        nbytes = MAX_SIZE;
+    argv += 2;
+    argc -= 2;
+
+    if (!strcmp(argv[0], "--id")) {
+        report[0] = strtol(argv[1], NULL, 0);
+        printf("report id: %d\n", report[0]);
+        argv += 2;
+        argc -= 2;
     }
 
-    for (int i=0; i < nbytes; i++) {
-        report[i] = strtol(argv[i + 2], NULL, 0);
+    if (argc >= REPORT_SIZE) {
+        printf("Error: too many arguments.");
+        exit(1);
+    }
+
+    for (int i=0; i < argc; i++) {
+        report[i + 1] = strtol(argv[i], NULL, 0);
     }
 
     int fd = open(device_name, O_RDWR);
@@ -75,7 +85,7 @@ int main(int argc, char *argv[])
 
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    res = write(fd, report, nbytes);
+    res = write(fd, report, REPORT_SIZE);
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     reltime = (t1.tv_sec - t0.tv_sec) * 1.0e9 + (t1.tv_nsec - t0.tv_nsec);
