@@ -70,6 +70,7 @@ static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
 static bool effect_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
+static bool effect_is_enabled[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
 static int pending_fd[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect pending_effects[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect tmp_effect;
@@ -532,6 +533,7 @@ ssize_t write(int fd, const void *buf, size_t num)
     static ssize_t (*_write)(int fd, const void *buf, size_t num) = NULL;
     struct input_event *event = NULL;
     int result;
+    bool ignore_write = false;
 
     if (!_write) {
         _write = dlsym(RTLD_NEXT, "write");
@@ -556,17 +558,25 @@ ssize_t write(int fd, const void *buf, size_t num)
             break;
         default:
             if (event->value) {
-                report("> PLAY %u %d", event->code, event->value);
-                if (enable_throttling) {
-                    ffbt_send_effect(event->code);
+                if (enable_throttling && effect_is_enabled[event->code]) {
+                    report("#> PLAY %u %d (ignored)", event->code, event->value);
+                    ignore_write = true;
+                }
+                else {
+                    report("> PLAY %u %d", event->code, event->value);
+                    effect_is_enabled[event->code] = true;
+                    if (enable_throttling) {
+                        ffbt_send_effect(event->code);
+                    }
                 }
             } else {
                 report("> STOP %u", event->code);
+                effect_is_enabled[event -> code] = false;
             }
             break;
     }
 
-    if (!ignore_set_gain || event->code != FF_GAIN) {
+    if (!ignore_write && (!ignore_set_gain || event->code != FF_GAIN)) {
         result = _write(fd, buf, num);
     } else {
         result = 0;
