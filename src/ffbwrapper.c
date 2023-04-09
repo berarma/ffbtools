@@ -571,22 +571,24 @@ ssize_t write(int fd, const void *buf, size_t num)
                 }
             } else {
                 report("> STOP %u", event->code);
-                effect_is_enabled[event -> code] = false;
+                effect_is_enabled[event->code] = false;
             }
             break;
     }
 
     if (!ignore_write && (!ignore_set_gain || event->code != FF_GAIN)) {
         result = _write(fd, buf, num);
-    } else {
+    }
+    else {
         result = 0;
     }
 
-    report("< %d", result);
-
-    if (enable_features_hack && result != 0 && event->code < FF_MAX_EFFECTS) {
+    if (!ignore_write && enable_features_hack && result != 0 && event->code < FF_MAX_EFFECTS) {
         result = 0;
         report("< %d # features hack", result);
+    }
+    else if (!ignore_write) {
+        report("< %d", result);
     }
 
     return result;
