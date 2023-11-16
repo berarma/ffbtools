@@ -61,6 +61,7 @@ static unsigned int dev_minor = 0;
 static int enable_logger = 0;
 static int enable_update_fix = 0;
 static int enable_direction_fix = 0;
+static int enable_duration_fix = 0;
 static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
@@ -180,6 +181,11 @@ static void ffbt_init()
         enable_direction_fix = 1;
     }
 
+    const char *str_duration_fix = getenv("FFBTOOLS_DURATION_FIX");
+    if (str_duration_fix != NULL && strcmp(str_duration_fix, "1") == 0) {
+        enable_duration_fix = 1;
+    }
+
     const char *str_features_hack = getenv("FFBTOOLS_FEATURES_HACK");
     if (str_features_hack != NULL && strcmp(str_features_hack, "1") == 0) {
         enable_features_hack = 1;
@@ -227,11 +233,11 @@ static void ffbt_init()
 
     if (enable_logger && ftell(log_file) == 0) {
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
-                "DIRECTION_FIX=%d, FEATURES_HACK=%d, "
+                "DIRECTION_FIX=%d, DURATION_FIX=%d, FEATURES_HACK=%d, "
                 "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
                 "THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
-                enable_direction_fix, enable_features_hack,
+                enable_direction_fix, enable_duration_fix, enable_features_hack,
                 enable_force_inversion, ignore_set_gain, enable_offset_fix,
                 str_throttling == NULL ? "0" : str_throttling);
     }
@@ -378,12 +384,20 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect->u.condition[0].center);
             }
 
-            int modified = enable_direction_fix | enable_force_inversion;
+            int modified = enable_direction_fix | enable_force_inversion | enable_duration_fix;
 
             report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s",
                     modified ? "#" : "", effect->id,
                     effect->direction, effect->replay.length,
                     effect->replay.delay, type, effect_params);
+
+            if (enable_duration_fix && effect->replay.length == 0) {
+                effect->replay.length = 0xFFFF;
+                report("> UPLOAD id:%d dir:%d type:%s length:%d delay:%d %s "
+                        "# duration fix", effect->id, effect->direction, type,
+                        effect->replay.length, effect->replay.delay,
+                        effect_params);
+            }
 
             if (enable_direction_fix && (effect->direction == 0 || effect->direction == 0x8000)) {
                 effect->direction -= 0x4000;
