@@ -24,6 +24,9 @@ One or more of the following options can be used:
   a vertical component are ignored so this fix sets an horizontal direction to
   all effects.
 
+  `--duration-fix`: Apply a fix to set the duration 0 to 0xFFFF for devices that
+  do not interpret 0 as an infinite effect..
+
   `--features-hack`: Reports all effect types as supported. The effect types not
   supported by the device will later fail but it allows to log all the effects
   the application can generate.
