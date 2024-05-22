@@ -73,10 +73,12 @@ static short last_effect_used = 16;
 static bool effect_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
 static int pending_fd[FFBTOOLS_THROTTLE_BUFFER_SIZE];
 static struct ff_effect pending_effects[FFBTOOLS_THROTTLE_BUFFER_SIZE];
-static struct ff_effect tmp_effect;
+static bool play_cmd_is_pending[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {false};
+static int pending_play_counts[FFBTOOLS_THROTTLE_BUFFER_SIZE] = {0};
 static pthread_spinlock_t pending_effects_lock;
 static timer_t throttle_timer_id;
 static struct sigevent throttle_sigev;
+static ssize_t (*_write)(int fd, const void *buf, size_t num) = NULL;
 
 static void ffbt_output(char *message)
 {
@@ -101,29 +103,29 @@ static void ffbt_output(char *message)
     fflush(log_file);
 }
 
-static void ffbt_send_effect(int id)
-{
-    int fd;
-
-    pthread_spin_lock(&pending_effects_lock);
-    if (effect_is_pending[id]) {
-        effect_is_pending[id] = false;
-        fd = pending_fd[id];
-        memcpy((char*) &tmp_effect, (char*) &pending_effects[id], sizeof(struct ff_effect));
-        pthread_spin_unlock(&pending_effects_lock);
-        _ioctl(fd, EVIOCSFF, (char*) &tmp_effect);
-    } else {
-        pthread_spin_unlock(&pending_effects_lock);
-    }
-}
-
 static void ffbt_throttle_function(union sigval value)
 {
     (void) value;
+    int fd;
+    struct input_event event;
+    struct ff_effect tmp_effect;
 
     for (int id = 0; id < FFBTOOLS_THROTTLE_BUFFER_SIZE; id++) {
+        fd = pending_fd[id];
         if (effect_is_pending[id]) {
-            ffbt_send_effect(id);
+            pthread_spin_lock(&pending_effects_lock);
+            memcpy((char*) &tmp_effect, (char*) &pending_effects[id], sizeof(struct ff_effect));
+            effect_is_pending[id] = false;
+            pthread_spin_unlock(&pending_effects_lock);
+            _ioctl(fd, EVIOCSFF, (char*) &pending_effects[id]);
+        }
+        if (play_cmd_is_pending[id]) {
+            pthread_spin_lock(&pending_effects_lock);
+            event.code = id;
+            event.value = pending_play_counts[id];
+            play_cmd_is_pending[id] = false;
+            pthread_spin_unlock(&pending_effects_lock);
+            _write(fd, &event, sizeof(event));
         }
     }
 }
@@ -149,6 +151,7 @@ static void ffbt_get_timer_interval(struct timespec *ret, const char *str_interv
 static void ffbt_init()
 {
     _ioctl = dlsym(RTLD_NEXT, "ioctl");
+    _write = dlsym(RTLD_NEXT, "write");
 
     const char *str_dev_major = getenv("FFBTOOLS_DEV_MAJOR");
     const char *str_dev_minor = getenv("FFBTOOLS_DEV_MINOR");
@@ -436,7 +439,7 @@ int ioctl(int fd, unsigned long request, char *argp)
 
             if (enable_throttling && effect->id != -1) {
                 if (effect->id > FFBTOOLS_MAX_EFFECT_ID) {
-                    report("# cannot throttle id:%d > %d", effect->id, FFBTOOLS_MAX_EFFECT_ID);
+                    report("# cannot throttle effect, id too large (%d > %d)", effect->id, FFBTOOLS_MAX_EFFECT_ID);
                 } else {
                     throttled = true;
                     pthread_spin_lock(&pending_effects_lock);
@@ -543,13 +546,9 @@ int ioctl(int fd, unsigned long request, char *argp)
 
 ssize_t write(int fd, const void *buf, size_t num)
 {
-    static ssize_t (*_write)(int fd, const void *buf, size_t num) = NULL;
     struct input_event *event = NULL;
     int result;
-
-    if (!_write) {
-        _write = dlsym(RTLD_NEXT, "write");
-    }
+    bool throttled = false;
 
     event = (struct input_event*) buf;
 
@@ -569,18 +568,24 @@ ssize_t write(int fd, const void *buf, size_t num)
             report("> AUTOCENTER %d", event->value);
             break;
         default:
+            if (enable_throttling) {
+                if (event->code > FFBTOOLS_MAX_EFFECT_ID) {
+                    report("# cannot throttle effect, id too large (%d > %d)", event->code, FFBTOOLS_MAX_EFFECT_ID);
+                } else {
+                    throttled = true;
+                    play_cmd_is_pending[event->code] = true;
+                    pending_play_counts[event->code] = event->value;
+                }
+            }
             if (event->value) {
                 report("> PLAY %u %d", event->code, event->value);
-                if (enable_throttling) {
-                    ffbt_send_effect(event->code);
-                }
             } else {
                 report("> STOP %u", event->code);
             }
             break;
     }
 
-    if (!ignore_set_gain || event->code != FF_GAIN) {
+    if ((!ignore_set_gain || event->code != FF_GAIN) && !throttled) {
         result = _write(fd, buf, num);
     } else {
         result = 0;
