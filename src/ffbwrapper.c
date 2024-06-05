@@ -573,8 +573,10 @@ ssize_t write(int fd, const void *buf, size_t num)
                     report("# cannot throttle effect, id too large (%d > %d)", event->code, FFBTOOLS_MAX_EFFECT_ID);
                 } else {
                     throttled = true;
+                    pthread_spin_lock(&pending_effects_lock);
                     play_cmd_is_pending[event->code] = true;
                     pending_play_counts[event->code] = event->value;
+                    pthread_spin_unlock(&pending_effects_lock);
                 }
             }
             if (event->value) {
