@@ -121,6 +121,7 @@ static void ffbt_throttle_function(union sigval value)
         }
         if (play_cmd_is_pending[id]) {
             pthread_spin_lock(&pending_effects_lock);
+            event.type = EV_FF;
             event.code = id;
             event.value = pending_play_counts[id];
             play_cmd_is_pending[id] = false;
@@ -576,6 +577,7 @@ ssize_t write(int fd, const void *buf, size_t num)
                     pthread_spin_lock(&pending_effects_lock);
                     play_cmd_is_pending[event->code] = true;
                     pending_play_counts[event->code] = event->value;
+                    pending_fd[event->code] = fd;
                     pthread_spin_unlock(&pending_effects_lock);
                 }
             }
@@ -590,13 +592,13 @@ ssize_t write(int fd, const void *buf, size_t num)
     if ((!ignore_set_gain || event->code != FF_GAIN) && !throttled) {
         result = _write(fd, buf, num);
     } else {
-        result = 0;
+        result = num;
     }
 
     report("< %d", result);
 
-    if (enable_features_hack && result != 0 && event->code < FF_MAX_EFFECTS) {
-        result = 0;
+    if (enable_features_hack && result < 0 && event->code < FF_MAX_EFFECTS) {
+        result = num;
         report("< %d # features hack", result);
     }
 
