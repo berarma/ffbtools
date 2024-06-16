@@ -8,5 +8,9 @@
 10000000 > UPLOAD id:0 dir:16384 type:PERIODIC waveform:SINE period:1000 magnitude:25000
 15000000 # Fast strong periodic sine for 5s
 15000000 > UPLOAD id:0 dir:16384 type:PERIODIC waveform:SINE period:100 magnitude:25000
-20000000 > STOP 0
-20000000 > REMOVE 0
+20000000 # Simulating constant force left
+20000000 > UPLOAD id:0 dir:16384 type:PERIODIC waveform:SINE period:32767 magnitude:0 offset:16384
+25000000 # Simulating constant force right
+25000000 > UPLOAD id:0 dir:16384 type:PERIODIC waveform:SINE period:32767 magnitude:0 offset:-16384
+30000000 > STOP 0
+30000000 > REMOVE 0
