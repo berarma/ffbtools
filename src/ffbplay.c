@@ -126,7 +126,7 @@ void ffbt_init_effect(struct ff_effect *effect)
     effect->trigger.interval = 0;
     effect->replay.length = 0;
     effect->replay.delay = 0;
-    effect->direction = 0xC000;
+    effect->direction = 0x4000;
     switch (effect->type) {
         case FF_CONSTANT:
             effect->u.constant.level = 0x6000;
