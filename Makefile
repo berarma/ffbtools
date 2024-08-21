@@ -24,7 +24,7 @@ SRC_DIR ?= src
 OBJS := $(shell find $(BUILD_DIR) -name *.o 2> /dev/null)
 DEPS := $(OBJS:.o=.d)
 
-CFLAGS += -MMD -MP -Wall -Wextra
+CFLAGS += -MMD -MP -Wall -Wextra -ggdb
 LDLIBS += -lm
 
 all: $(BUILD_DIR) \

@@ -668,8 +668,14 @@ void ffbt_play_file(const char *file_name, int trace_mode)
         if (trace_mode) {
             printf("%s\n", line);
         }
-        strtok(line, "\n");
-        token = strtok_r(line, " ", &next_token);
+        token = strtok(line, "\n");
+        if (token == NULL || token[0] == '\0') {
+            continue;
+        }
+        token = strtok_r(token, " ", &next_token);
+        if (token == NULL || token[0] == '\0') {
+            continue;
+        }
         time = strtol(token, NULL, 10);
         if (first) {
             first = 0;
