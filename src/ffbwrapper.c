@@ -404,7 +404,7 @@ int ioctl(int fd, unsigned long request, char *argp)
             }
 
             if (enable_direction_fix && (effect->direction == 0 || effect->direction == 0x8000)) {
-                effect->direction -= 0x4000;
+                effect->direction = 0x4000;
                 report("> UPLOAD id:%d dir:%d type:%s length:%d delay:%d %s "
                         "# direction fix", effect->id, effect->direction, type,
                         effect->replay.length, effect->replay.delay,
