@@ -65,6 +65,7 @@ static int enable_duration_fix = 0;
 static int enable_features_hack = 0;
 static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
+static int ignore_autocenter = 0;
 static int enable_offset_fix = 0;
 static int enable_throttling = 0;
 static FILE *log_file = NULL;
@@ -205,6 +206,11 @@ static void ffbt_init()
         ignore_set_gain = 1;
     }
 
+    const char *str_ignore_autocenter = getenv("FFBTOOLS_IGNORE_AUTOCENTER");
+    if (str_ignore_autocenter != NULL && strcmp(str_ignore_autocenter, "1") == 0) {
+        ignore_autocenter = 1;
+    }
+
     const char *str_offset_fix = getenv("FFBTOOLS_OFFSET_FIX");
     if (str_offset_fix != NULL && strcmp(str_offset_fix, "1") == 0) {
         enable_offset_fix = 1;
@@ -238,11 +244,12 @@ static void ffbt_init()
     if (enable_logger && ftell(log_file) == 0) {
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
                 "DIRECTION_FIX=%d, DURATION_FIX=%d, FEATURES_HACK=%d, "
-                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
-                "THROTTLING=%s",
+                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, IGNORE_AUTOCENTER=%d, "
+                "OFFSET_FIX=%d, THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_duration_fix, enable_features_hack,
-                enable_force_inversion, ignore_set_gain, enable_offset_fix,
+                enable_force_inversion, ignore_set_gain, ignore_autocenter,
+                enable_offset_fix,
                 str_throttling == NULL ? "0" : str_throttling);
     }
 }
@@ -566,7 +573,11 @@ ssize_t write(int fd, const void *buf, size_t num)
             }
             break;
         case FF_AUTOCENTER:
-            report("> AUTOCENTER %d", event->value);
+            if (ignore_autocenter) {
+                report("#> AUTOCENTER %d (ignored)", event->value);
+            } else {
+                report("> AUTOCENTER %d", event->value);
+            }
             break;
         default:
             if (enable_throttling) {
@@ -589,7 +600,7 @@ ssize_t write(int fd, const void *buf, size_t num)
             break;
     }
 
-    if ((!ignore_set_gain || event->code != FF_GAIN) && !throttled) {
+    if ((!ignore_set_gain || event->code != FF_GAIN) && (!ignore_autocenter || event->code != FF_AUTOCENTER) && !throttled) {
         result = _write(fd, buf, num);
     } else {
         result = num;
