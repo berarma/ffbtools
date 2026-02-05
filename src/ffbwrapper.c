@@ -67,6 +67,7 @@ static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
 static int ignore_autocenter = 0;
 static int enable_offset_fix = 0;
+static int enable_period_fix = 0;
 static int enable_throttling = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
@@ -216,6 +217,11 @@ static void ffbt_init()
         enable_offset_fix = 1;
     }
 
+    const char *str_period_fix = getenv("FFBTOOLS_PERIOD_FIX");
+    if (str_period_fix != NULL && strcmp(str_period_fix, "1") == 0) {
+        enable_period_fix = 1;
+    }
+
     const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
     if (str_throttling != NULL && strcmp(str_throttling, "0") != 0) {
         int result;
@@ -245,11 +251,11 @@ static void ffbt_init()
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
                 "DIRECTION_FIX=%d, DURATION_FIX=%d, FEATURES_HACK=%d, "
                 "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, IGNORE_AUTOCENTER=%d, "
-                "OFFSET_FIX=%d, THROTTLING=%s",
+                "OFFSET_FIX=%d, PERIOD_FIX=%d, THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_duration_fix, enable_features_hack,
                 enable_force_inversion, ignore_set_gain, ignore_autocenter,
-                enable_offset_fix,
+                enable_offset_fix, enable_period_fix,
                 str_throttling == NULL ? "0" : str_throttling);
     }
 }
@@ -426,23 +432,45 @@ int ioctl(int fd, unsigned long request, char *argp)
                         effect_params);
             }
 
-            if (effect->type == FF_PERIODIC && enable_offset_fix) {
-                effect->u.periodic.offset = (int)effect->u.periodic.offset * 0x7fff / 10000;
-                effect->u.periodic.phase = (int)effect->u.periodic.phase * 0xffff / 35999;
-                snprintf(effect_params, sizeof(effect_params),
-                        "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
-                        waveform, effect->u.periodic.period,
-                        effect->u.periodic.magnitude,
-                        effect->u.periodic.offset,
-                        effect->u.periodic.phase,
-                        effect->u.periodic.envelope.attack_length,
-                        effect->u.periodic.envelope.attack_level,
-                        effect->u.periodic.envelope.fade_length,
-                        effect->u.periodic.envelope.fade_level);
-                report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s",
-                        modified ? "#" : "", effect->id,
-                        effect->direction, effect->replay.length,
-                        effect->replay.delay, type, effect_params);
+            if (effect->type == FF_PERIODIC) {
+                if (enable_offset_fix) {
+                    effect->u.periodic.offset = (int)effect->u.periodic.offset * 0x7fff / 10000;
+                    effect->u.periodic.phase = (int)effect->u.periodic.phase * 0xffff / 35999;
+                    snprintf(effect_params, sizeof(effect_params),
+                             "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                             waveform, effect->u.periodic.period,
+                             effect->u.periodic.magnitude,
+                             effect->u.periodic.offset,
+                             effect->u.periodic.phase,
+                             effect->u.periodic.envelope.attack_length,
+                             effect->u.periodic.envelope.attack_level,
+                             effect->u.periodic.envelope.fade_length,
+                             effect->u.periodic.envelope.fade_level);
+                    report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s",
+                           modified ? "#" : "", effect->id, effect->direction,
+                           effect->replay.length, effect->replay.delay, type,
+                           effect_params);
+                }
+                if (enable_period_fix) {
+                  if (effect->u.periodic.period == 0) {
+                      effect->u.periodic.period = 1;
+                  }
+                  snprintf(effect_params, sizeof(effect_params),
+                           "waveform:%s, period:%u, magnitude:%d, offset:%d, phase:%u, attack_length:%u, attack_level:%u, fade_length:%u, fade_level:%u",
+                           waveform, effect->u.periodic.period,
+                           effect->u.periodic.magnitude,
+                           effect->u.periodic.offset,
+                           effect->u.periodic.phase,
+                           effect->u.periodic.envelope.attack_length,
+                           effect->u.periodic.envelope.attack_level,
+                           effect->u.periodic.envelope.fade_length,
+                           effect->u.periodic.envelope.fade_level);
+                  report("%s> UPLOAD id:%d dir:%d length:%d delay:%d type:%s %s "
+                         "# periodic fix",
+                         modified ? "#" : "", effect->id, effect->direction,
+                         effect->replay.length, effect->replay.delay, type,
+                         effect_params);
+                }
             }
 
             if (enable_throttling && effect->id != -1) {
